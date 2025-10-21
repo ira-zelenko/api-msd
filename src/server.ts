@@ -1,12 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
+import path from "path";
 import dailyRoutes from "./routes/daily";
 import weeklyRoutes from "./routes/weekly";
 import monthlyRoutes from "./routes/monthly";
 
-dotenv.config();
+const envFile =
+  process.env.NODE_ENV === "production" ? ".env" : ".env.local";
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const app = express();
 
