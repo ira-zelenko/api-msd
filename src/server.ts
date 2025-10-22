@@ -6,38 +6,40 @@ import dailyRoutes from "./routes/daily";
 import weeklyRoutes from "./routes/weekly";
 import monthlyRoutes from "./routes/monthly";
 
-const envFile =
-  process.env.NODE_ENV === "production" ? ".env" : ".env.local";
-
+const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000", /\.vercel\.app$/];
+const allowedOrigins: (string | RegExp)[] = [
+  "http://localhost:3000",
+  /\.vercel\.app$/
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.some((url) =>
-          typeof url === "string" ? origin === url : url.test(origin)
-        )
-      ) {
+      if (!origin || allowedOrigins.some((url) =>
+        typeof url === "string" ? origin === url : url.test(origin)
+      )) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Processing preflight requests (otherwise Vercel cuts OPTIONS)
+// Processing preflight requests
 app.options(/.*/, cors());
 
+// JSON body parsing
 app.use(express.json());
 
+// Роуты
 app.use("/api/daily", dailyRoutes);
 app.use("/api/weekly", weeklyRoutes);
 app.use("/api/monthly", monthlyRoutes);
