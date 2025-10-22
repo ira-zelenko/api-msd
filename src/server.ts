@@ -13,36 +13,47 @@ const app = express();
 
 const allowedOrigins: (string | RegExp)[] = [
   "http://localhost:3000",
-  /\.vercel\.app$/
+  "http://localhost:3001",
+  /^https:\/\/.*\.vercel\.app$/,
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((url) =>
-        typeof url === "string" ? origin === url : url.test(origin)
-      )) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const isAllowed = allowedOrigins.some((allowedOrigin) =>
+        typeof allowedOrigin === "string"
+          ? origin === allowedOrigin
+          : allowedOrigin.test(origin)
+      );
+
+      if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
-
-// Processing preflight requests
-app.options(/.*/, cors());
 
 // JSON body parsing
 app.use(express.json());
 
-// Роуты
+// Routes
 app.use("/api/daily", dailyRoutes);
 app.use("/api/weekly", weeklyRoutes);
 app.use("/api/monthly", monthlyRoutes);
+
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "API is running" });
+});
 
 // Export for Vercel (Serverless func)
 export default app;
