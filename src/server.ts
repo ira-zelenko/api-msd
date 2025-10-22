@@ -20,6 +20,8 @@ const allowedOrigins: (string | RegExp)[] = [
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log(`📍 Request from origin: ${origin}`); // Add this line
+
       if (!origin) {
         return callback(null, true);
       }
@@ -31,8 +33,10 @@ app.use(
       );
 
       if (isAllowed) {
+        console.log(`✅ Allowed origin: ${origin}`); // Add this line
         callback(null, true);
       } else {
+        console.error(`🚫 CORS blocked origin: ${origin}`);
         callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
