@@ -13,12 +13,17 @@ dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000"];
+const allowedOrigins = ["http://localhost:3000", /\.vercel\.app$/];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((url) => origin.startsWith(url))) {
+      if (
+        !origin ||
+        allowedOrigins.some((url) =>
+          typeof url === "string" ? origin === url : url.test(origin)
+        )
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
