@@ -1,7 +1,4 @@
-export type Metric = 'volume' | 'spend' | 'weight' | 'costPerLB' | 'costPerParcel';
-export type Dimension = 'carrier' | 'shipvia' | 'distributionCenter' | 'customer';
-
-export interface MetricsValues {
+interface MetricsValues {
   spend: number;
   volume: number;
   weight: number;
@@ -9,7 +6,7 @@ export interface MetricsValues {
   costPerParcel: number;
 }
 
-export interface Dimensions {
+interface Dimensions {
   carrier: Record<string, MetricsValues>;
   shipvia: Record<string, MetricsValues>;
   distributionCenter: Record<string, MetricsValues>;

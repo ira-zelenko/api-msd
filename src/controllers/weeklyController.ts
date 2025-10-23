@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import clientPromise from "../lib/db";
-import { PeriodEntry } from "../types/data";
+import { PeriodEntry } from "../types/metrics";
 
 export const getWeekly = async (req: Request, res: Response): Promise<void> => {
   try {
