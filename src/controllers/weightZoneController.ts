@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import clientPromise from "../lib/db";
-import { WeightZoneDocument, MetricKey } from "../types/weightZone";
+import { WeightZoneData, MetricKey } from "../types/weightZone";
 
 export const getWeightZone = async (req: Request, res: Response): Promise<void> => {
   try {
     const client = await clientPromise;
     const db = client.db("msd");
 
-    const { from, to, metrics } = req.query;
+    const { from, to, metric } = req.query;
 
     const query: any = {};
 
@@ -32,33 +32,40 @@ export const getWeightZone = async (req: Request, res: Response): Promise<void> 
     }
 
     const data = (await db
-      .collection("weight-zone")
+      .collection("weight_zone")
       .find(query)
       .sort({ date: 1 })
-      .toArray()) as unknown as WeightZoneDocument[];
+      .toArray()) as unknown as WeightZoneData[];
 
     if (!data.length) {
       res.status(404).json({ error: "No data found for the given period" });
       return;
     }
 
-    // If specific metrics passed - filter them.
     let keys: MetricKey[] | null = null;
-    if (metrics) {
-      keys = (metrics as string).split(",") as MetricKey[];
+    if (metric) {
+      keys = (metric as string).split(",") as MetricKey[];
     }
 
-    // Bring the format to the form { date, metrics }
-    const formatted = data.map(d => ({
-      date: d.date,
-      metrics: keys
-        ? Object.fromEntries(keys.map(k => [k, d.metrics[k]]))
-        : d.metrics
-    }));
+    const formatted = data.map((entry) => {
+      const { date, metrics: allMetrics } = entry;
+
+      const filteredMetrics = keys
+        ? Object.fromEntries(
+          keys
+            .filter((k) => allMetrics[k])
+            .map((k) => [k, allMetrics[k]])
+        )
+        : allMetrics;
+
+      return {
+        date,
+        metrics: filteredMetrics,
+      };
+    });
 
     res.json(formatted);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to fetch weightZone data" });
   }
 };
