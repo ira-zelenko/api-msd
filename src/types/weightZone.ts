@@ -6,11 +6,11 @@ export interface WeightZonePoint {
 
 export type MetricKey =
   | "spent"
-  | "spent_percent"
-  | "volume_parcel"
-  | "volume_percent"
-  | "cost_per_parcel"
-  | "cost_per_lb";
+  | "spentPercent"
+  | "volumeParcel"
+  | "volumePercent"
+  | "costPerParcel"
+  | "costPerLb";
 
 export type WeightZoneMetrics = Record<MetricKey, WeightZonePoint>;
 
