@@ -2,9 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import dailyRoutes from "./routes/daily";
-import weeklyRoutes from "./routes/weekly";
-import monthlyRoutes from "./routes/monthly";
+import metricsDailyRoutes from "./routes/metricsDaily";
+import metricsWeeklyRoutes from "./routes/metricsWeekly";
+import metricsMonthlyRoutes from "./routes/metricsMonthly";
 import weightZoneRoutes from "./routes/weightZone";
 
 const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
@@ -47,9 +47,9 @@ app.use(
 app.use(express.json());
 
 // Routes
-app.use("/api/daily", dailyRoutes);
-app.use("/api/weekly", weeklyRoutes);
-app.use("/api/monthly", monthlyRoutes);
+app.use("/api/metrics-daily", metricsDailyRoutes);
+app.use("/api/metrics-weekly", metricsWeeklyRoutes);
+app.use("/api/metrics-monthly", metricsMonthlyRoutes);
 app.use("/api/weight-zone", weightZoneRoutes);
 
 

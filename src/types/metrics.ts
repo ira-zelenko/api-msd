@@ -1,22 +1,16 @@
-interface MetricsValues {
-  spend: number;
-  volume: number;
-  weight: number;
-  costPerLB: number;
-  costPerParcel: number;
-}
-
-interface Dimensions {
-  carrier: Record<string, MetricsValues>;
-  shipvia: Record<string, MetricsValues>;
-  distributionCenter: Record<string, MetricsValues>;
-  customer: Record<string, MetricsValues>;
-}
 
 export interface PeriodEntry {
   _id: string;
-  periodType: 'daily' | 'weekly' | 'monthly';
+  periodType:'daily' | 'weekly' | 'monthly';
   periodKey: string;
   referenceDate: string;
-  dimensions: Dimensions;
+  carrier: string;
+  shipvia: string;
+  distributionCenter: string;
+  customer: string;
+  weight: number;
+  spent: number;
+  volume: number;
+  costPerLB: number;
+  costPerParcel: number;
 }

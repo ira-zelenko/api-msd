@@ -3,7 +3,7 @@ import { startOfMonth, endOfMonth } from "date-fns";
 import clientPromise from "../lib/db";
 import { PeriodEntry } from "../types/metrics";
 
-export const getMonthly = async (req: Request, res: Response): Promise<void> => {
+export const getMetricsMonthly = async (req: Request, res: Response): Promise<void> => {
   try {
     const client = await clientPromise;
     const db = client.db("msd");
@@ -23,7 +23,7 @@ export const getMonthly = async (req: Request, res: Response): Promise<void> => 
       const end = endOfMonth(toDate);
 
       const data = (await db
-        .collection("monthly")
+        .collection("metrics_monthly")
         .find({
           referenceDate: {
             $gte: start.toISOString(),

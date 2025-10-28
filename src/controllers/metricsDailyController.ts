@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import clientPromise from "../lib/db";
 import { PeriodEntry } from "../types/metrics";
 
-export const getWeekly = async (req: Request, res: Response): Promise<void> => {
+export const getMetricsDaily = async (req: Request, res: Response): Promise<void> => {
   try {
     const client = await clientPromise;
     const db = client.db("msd");
@@ -16,12 +16,11 @@ export const getWeekly = async (req: Request, res: Response): Promise<void> => {
 
       if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
         res.status(400).json({ error: "Invalid date format" });
+
         return;
       }
 
-      // // move "to" to the end of week
-      // const toInclusive = new Date(toDate);
-      // toInclusive.setDate(toInclusive.getDate() + (7 - ((toInclusive.getDay() || 7))));
+      toDate.setHours(23, 59, 59, 999);
 
       const fromStr = fromDate.toISOString().slice(0, 19);
       const toStr = toDate.toISOString().slice(0, 19);
@@ -32,10 +31,14 @@ export const getWeekly = async (req: Request, res: Response): Promise<void> => {
       };
     }
 
-    const data = (await db.collection("weekly").find(query).toArray()) as unknown as PeriodEntry[];
+    const data = (await db
+      .collection("metrics_daily")
+      .find(query)
+      .toArray()) as unknown as PeriodEntry[];
+
     res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch weekly data" });
+    res.status(500).json({ error: "Failed to fetch daily data" });
   }
 };
