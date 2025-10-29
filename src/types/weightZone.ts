@@ -1,34 +1,18 @@
-export interface WeightZonePoint {
-  [zone: string]: {
-    [weight: string]: { value: number };
-  };
-}
-
 export type MetricKey =
   | "spent"
   | "spentPercent"
   | "volumeParcel"
   | "volumePercent"
   | "costPerParcel"
-  | "costPerLb";
+  | "costPerLB";
 
-export type WeightZoneMetrics = Record<MetricKey, WeightZonePoint>;
-
-export interface WeightZoneData {
-  _id?: string;
-  date: Date;
-  metrics: WeightZoneMetrics;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// types/weightZone.ts
 export interface ZoneWeightMetrics {
-  spend: number;
-  volume: number;
-  weight: number;
-  costPerLB: number;
-  costPerParcel: number;
+  spent: number,
+  spentPercent: number,
+  volumeParcel: number,
+  volumePercent: number,
+  costPerLB: number,
+  costPerParcel: number,
 }
 
 export interface ZonesData {
