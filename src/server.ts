@@ -5,7 +5,9 @@ import path from "path";
 import metricsDailyRoutes from "./routes/metricsDaily";
 import metricsWeeklyRoutes from "./routes/metricsWeekly";
 import metricsMonthlyRoutes from "./routes/metricsMonthly";
-import weightZoneRoutes from "./routes/weightZone";
+import weightZoneDailyRoutes from "./routes/weightZoneDaily";
+import weightZoneMonthlyRoutes from "./routes/weightZoneMonthly";
+import weightZoneWeeklyRoutes from "./routes/weightZoneWeekly";
 
 const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
@@ -50,7 +52,9 @@ app.use(express.json());
 app.use("/api/metrics-daily", metricsDailyRoutes);
 app.use("/api/metrics-weekly", metricsWeeklyRoutes);
 app.use("/api/metrics-monthly", metricsMonthlyRoutes);
-app.use("/api/weight-zone", weightZoneRoutes);
+app.use("/api/weight-zone-daily", weightZoneDailyRoutes);
+app.use("/api/weight-zone-weekly", weightZoneWeeklyRoutes);
+app.use("/api/weight-zone-monthly", weightZoneMonthlyRoutes);
 
 
 // Health check endpoint
