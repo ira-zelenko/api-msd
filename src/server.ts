@@ -2,14 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import metricsDailyRoutes from "./routes/metricsDaily";
-import metricsWeeklyRoutes from "./routes/metricsWeekly";
-import metricsMonthlyRoutes from "./routes/metricsMonthly";
-import weightZoneDailyRoutes from "./routes/weightZoneDaily";
-import weightZoneMonthlyRoutes from "./routes/weightZoneMonthly";
-import weightZoneWeeklyRoutes from "./routes/weightZoneWeekly";
-import geoCountyWeeklyRoutes from "./routes/geoCountyWeekly";
-import geoStateWeeklyRoutes from "./routes/geoStateWeekly";
+import apiRoutes from "./routes/index";
 
 const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
@@ -50,16 +43,7 @@ app.use(
 // JSON body parsing
 app.use(express.json());
 
-// Routes
-app.use("/api/metrics-daily", metricsDailyRoutes);
-app.use("/api/metrics-weekly", metricsWeeklyRoutes);
-app.use("/api/metrics-monthly", metricsMonthlyRoutes);
-app.use("/api/weight-zone-daily", weightZoneDailyRoutes);
-app.use("/api/weight-zone-weekly", weightZoneWeeklyRoutes);
-app.use("/api/weight-zone-monthly", weightZoneMonthlyRoutes);
-app.use("/api/geo-county-weekly", geoCountyWeeklyRoutes);
-app.use("/api/geo-state-weekly", geoStateWeeklyRoutes);
-
+app.use("/api", apiRoutes);
 
 // Health check endpoint
 app.get("/", (req, res) => {
