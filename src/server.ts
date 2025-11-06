@@ -8,6 +8,8 @@ import metricsMonthlyRoutes from "./routes/metricsMonthly";
 import weightZoneDailyRoutes from "./routes/weightZoneDaily";
 import weightZoneMonthlyRoutes from "./routes/weightZoneMonthly";
 import weightZoneWeeklyRoutes from "./routes/weightZoneWeekly";
+import geoCountyWeeklyRoutes from "./routes/geoCountyWeekly";
+import geoStateWeeklyRoutes from "./routes/geoStateWeekly";
 
 const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
@@ -55,6 +57,8 @@ app.use("/api/metrics-monthly", metricsMonthlyRoutes);
 app.use("/api/weight-zone-daily", weightZoneDailyRoutes);
 app.use("/api/weight-zone-weekly", weightZoneWeeklyRoutes);
 app.use("/api/weight-zone-monthly", weightZoneMonthlyRoutes);
+app.use("/api/geo-county-weekly", geoCountyWeeklyRoutes);
+app.use("/api/geo-state-weekly", geoStateWeeklyRoutes);
 
 
 // Health check endpoint
