@@ -5,10 +5,11 @@ import clientPromise from "../lib/db";
  * Search shipments with filters
  * Query params:
  * - search: string (searches in name, originsZip, destinationZip)
- * - brand: string (optional)
- * - carrier: string (optional)
- * - shipvia: string (optional)
- * - state: string (optional)
+ * - brand: string (optional, comma-separated values for multiple)
+ * - carrier: string (optional, comma-separated values for multiple)
+ * - shipvia: string (optional, comma-separated values for multiple)
+ * - state: string (optional, comma-separated values for multiple)
+ * - daterange: string (optional, format "fromISO,toISO")
  * - page: number (optional, default: 1)
  * - pageSize: number (optional, default: 10)
  */
@@ -26,6 +27,7 @@ export const searchShipments = async (
       carrier,
       shipvia,
       state,
+      daterange,
       page = "1",
       pageSize = "10",
     } = req.query;
@@ -33,7 +35,7 @@ export const searchShipments = async (
     // Build query
     const query: any = {};
 
-    // Search across name, originsZip, destinationZip (only if search is provided and not empty)
+    // Search across name, originsZip, destinationZip
     if (search && typeof search === "string" && search.trim()) {
       const searchRegex = new RegExp(search.trim(), "i");
       query.$or = [
@@ -43,23 +45,42 @@ export const searchShipments = async (
       ];
     }
 
-    // Add filter fields
-    if (brand && typeof brand === "string") {
-      query.brand = brand;
-    }
-    if (carrier && typeof carrier === "string") {
-      query.carrier = carrier;
-    }
-    if (shipvia && typeof shipvia === "string") {
-      query.shipvia = shipvia;
-    }
-    if (state && typeof state === "string") {
-      query.state = state;
+    // Helper function for array filters
+    const addArrayFilter = (param: any, fieldName: string) => {
+      if (param && typeof param === "string") {
+        const arr = param.split(",").map((s) => s.trim()).filter(Boolean);
+        if (arr.length > 0) {
+          query[fieldName] = { $in: arr };
+        }
+      }
+    };
+
+    addArrayFilter(brand, "brand");
+    addArrayFilter(carrier, "carrier");
+    addArrayFilter(shipvia, "shipvia");
+    addArrayFilter(state, "state");
+
+    // Date range filter - string comparison works for ISO format
+    if (daterange && typeof daterange === "string") {
+      const [from, to] = daterange.split(",");
+      if (from && to) {
+        const startDate = from.trim().substring(0, 10);
+        const endDateObj = new Date(to.trim());
+
+        endDateObj.setDate(endDateObj.getDate() + 1);
+
+        const endDate = endDateObj.toISOString().substring(0, 10);
+
+        query.createdAt = {
+          $gte: startDate,
+          $lt: endDate
+        };
+      }
     }
 
     // Pagination
-    const pageNum = parseInt(page as string, 10);
-    const pageSizeNum = parseInt(pageSize as string, 10);
+    const pageNum = parseInt(page as string, 10) || 1;
+    const pageSizeNum = parseInt(pageSize as string, 10) || 10;
     const skip = (pageNum - 1) * pageSizeNum;
 
     // Execute query
