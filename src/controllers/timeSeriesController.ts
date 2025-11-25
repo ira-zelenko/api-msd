@@ -12,6 +12,7 @@ const createTimeSeriesController = (
   options?: {
     sortFields?: Record<string, 1 | -1>;
     additionalFilterKeys?: string[];
+    useTestDb?: boolean;
   }
 ) => {
   return async (req: Request, res: Response): Promise<void> => {
@@ -25,6 +26,7 @@ const createTimeSeriesController = (
       sortFields: options?.sortFields || { referenceDate: 1 },
       additionalFilters,
       errorMessage: `Failed to fetch ${periodType} ${dataType} data`,
+      useTestDb: options?.useTestDb || false, // Pass the useTestDb flag
     });
   };
 };
@@ -75,6 +77,7 @@ const getGeoStateDaily = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 
@@ -85,6 +88,7 @@ const getGeoStateWeekly = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 
@@ -95,6 +99,7 @@ const getGeoStateMonthly = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 
@@ -107,6 +112,7 @@ const getGeoCountyDaily = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1, county: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 
@@ -117,6 +123,7 @@ const getGeoCountyWeekly = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1, county: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 
@@ -127,6 +134,7 @@ const getGeoCountyMonthly = createTimeSeriesController(
   {
     sortFields: { referenceDate: 1, state: 1, county: 1 },
     additionalFilterKeys: ["state"],
+    useTestDb: true,
   }
 );
 

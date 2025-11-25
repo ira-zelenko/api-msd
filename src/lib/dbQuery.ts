@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import clientPromise from "./db";
+import clientPromise, { testClientPromise } from "./db";
 
 /**
  * Generic handler for time-series data queries
@@ -10,6 +10,7 @@ export interface QueryConfig {
   sortFields?: Record<string, 1 | -1>;
   additionalFilters?: Record<string, any>;
   errorMessage?: string;
+  useTestDb?: boolean; // New parameter to determine which DB to use
 }
 
 /**
@@ -44,8 +45,17 @@ const handleTimeSeriesQuery = async (
   config: QueryConfig
 ): Promise<void> => {
   try {
-    const client = await clientPromise;
-    const db = client.db("msd");
+    // Select the appropriate database connection
+    const client = config.useTestDb
+      ? await testClientPromise
+      : await clientPromise;
+
+    // Select the appropriate database name
+    const dbName = config.useTestDb
+      ? process.env.MONGODB_DB_NAME_TEST
+      : process.env.MONGODB_DB_NAME;
+
+    const db = client.db(dbName);
 
     const { from, to } = req.query;
     const query: any = { periodType: config.periodType };
@@ -54,7 +64,6 @@ const handleTimeSeriesQuery = async (
     const dateQuery = buildDateQuery(from as string, to as string);
     if (!dateQuery) {
       res.status(400).json({ error: "Invalid or missing date parameters" });
-
       return;
     }
 
@@ -78,7 +87,6 @@ const handleTimeSeriesQuery = async (
         error: config.errorMessage || "No data found for the given period",
         query: { from, to, ...config.additionalFilters },
       });
-
       return;
     }
 
