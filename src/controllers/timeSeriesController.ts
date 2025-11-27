@@ -97,7 +97,7 @@ const getGeoStateMonthly = createTimeSeriesController(
   "monthly",
   "geo state",
   {
-    sortFields: { referenceDate: 1, state: 1 },
+    sortFields: { periodKey: 1, state: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
