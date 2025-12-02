@@ -75,7 +75,7 @@ const getGeoStateDaily = createTimeSeriesController(
   "daily",
   "geo state",
   {
-    sortFields: { periodKey: 1, state: 1 },
+    sortFields: { state: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
@@ -86,7 +86,7 @@ const getGeoStateWeekly = createTimeSeriesController(
   "weekly",
   "geo state",
   {
-    sortFields: { periodKey: 1, state: 1 },
+    sortFields: { state: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
@@ -97,7 +97,7 @@ const getGeoStateMonthly = createTimeSeriesController(
   "monthly",
   "geo state",
   {
-    sortFields: { periodKey: 1, state: 1 },
+    sortFields: { state: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
@@ -110,7 +110,7 @@ const getGeoCountyDaily = createTimeSeriesController(
   "daily",
   "geo county",
   {
-    sortFields: { periodKey: 1, state: 1, county: 1 },
+    sortFields: { state: 1, county: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
@@ -121,7 +121,7 @@ const getGeoCountyWeekly = createTimeSeriesController(
   "weekly",
   "geo county",
   {
-    sortFields: { periodKey: 1, state: 1, county: 1 },
+    sortFields: { state: 1, county: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }
@@ -132,7 +132,7 @@ const getGeoCountyMonthly = createTimeSeriesController(
   "monthly",
   "geo county",
   {
-    sortFields: { periodKey: 1, state: 1, county: 1 },
+    sortFields: { state: 1, county: 1 },
     additionalFilterKeys: ["state"],
     useTestDb: true,
   }

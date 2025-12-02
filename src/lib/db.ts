@@ -25,6 +25,7 @@ if (process.env.NODE_ENV === "development") {
     client = new MongoClient(uri);
     (global as any)._mongoClientPromise = client.connect();
   }
+
   clientPromise = (global as any)._mongoClientPromise;
 
   // Test database connection
@@ -32,6 +33,7 @@ if (process.env.NODE_ENV === "development") {
     testClient = new MongoClient(uriTest);
     (global as any)._mongoTestClientPromise = testClient.connect();
   }
+
   testClientPromise = (global as any)._mongoTestClientPromise;
 } else {
   // Production database connection

@@ -21,9 +21,11 @@ const formatPeriodKey = (date: Date, periodType: string): string => {
   switch (periodType) {
     case 'monthly':
       return format(date, 'yyyy-MM');
+
     case 'weekly':
       const year = format(date, 'yyyy');
       const week = getISOWeek(date);
+
       return `${year}-W${String(week).padStart(2, '0')}`;
 
     case 'daily':
