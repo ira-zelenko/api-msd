@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import clientPromise from "./db";
+import clientPromise, { testClientPromise } from "./db";
+import { format, startOfWeek, getISOWeek } from "date-fns";
 
 /**
  * Generic handler for time-series data queries
@@ -10,14 +11,39 @@ export interface QueryConfig {
   sortFields?: Record<string, 1 | -1>;
   additionalFilters?: Record<string, any>;
   errorMessage?: string;
+  useTestDb?: boolean;
 }
 
 /**
+ * Format date based on period type to match periodKey format
+ */
+const formatPeriodKey = (date: Date, periodType: string): string => {
+  switch (periodType) {
+    case 'monthly':
+      return format(date, 'yyyy-MM');
+
+    case 'weekly':
+      const year = format(date, 'yyyy');
+      const week = getISOWeek(date);
+
+      return `${year}-W${String(week).padStart(2, '0')}`;
+
+    case 'daily':
+      return format(date, 'yyyy-MM-dd');
+
+    default:
+      return format(date, 'yyyy-MM-dd');
+  }
+};
+
+/**
  * Common query builder for date-based queries
+ * Returns dates formatted according to periodType to match periodKey field
  */
 export const buildDateQuery = (
   from: string | undefined,
-  to: string | undefined
+  to: string | undefined,
+  periodType: 'daily' | 'weekly' | 'monthly'
 ): { $gte: string; $lte: string } | null => {
   if (!from || !to) {
     return null;
@@ -30,11 +56,21 @@ export const buildDateQuery = (
     return null;
   }
 
-  toDate.setHours(23, 59, 59, 999);
+  // For weekly, adjust to start of week (Monday)
+  if (periodType === 'weekly') {
+    const adjustedFromDate = startOfWeek(fromDate, { weekStartsOn: 1 });
+    const adjustedToDate = startOfWeek(toDate, { weekStartsOn: 1 });
 
+    return {
+      $gte: formatPeriodKey(adjustedFromDate, periodType),
+      $lte: formatPeriodKey(adjustedToDate, periodType),
+    };
+  }
+
+  // Format dates according to period type
   return {
-    $gte: fromDate.toISOString().slice(0, 19),
-    $lte: toDate.toISOString().slice(0, 19),
+    $gte: formatPeriodKey(fromDate, periodType),
+    $lte: formatPeriodKey(toDate, periodType),
   };
 };
 
@@ -44,21 +80,34 @@ const handleTimeSeriesQuery = async (
   config: QueryConfig
 ): Promise<void> => {
   try {
-    const client = await clientPromise;
-    const db = client.db("msd");
+    // Select the appropriate database connection
+    const client = config.useTestDb
+      ? await testClientPromise
+      : await clientPromise;
+
+    // Select the appropriate database name
+    const dbName = config.useTestDb
+      ? process.env.MONGODB_DB_NAME_TEST
+      : process.env.MONGODB_DB_NAME;
+
+    const db = client.db(dbName);
 
     const { from, to } = req.query;
     const query: any = { periodType: config.periodType };
 
-    // Build date query
-    const dateQuery = buildDateQuery(from as string, to as string);
+    // Build date query with periodType-aware formatting
+    const dateQuery = buildDateQuery(
+      from as string,
+      to as string,
+      config.periodType
+    );
+
     if (!dateQuery) {
       res.status(400).json({ error: "Invalid or missing date parameters" });
-
       return;
     }
 
-    query.referenceDate = dateQuery;
+    query.periodKey = dateQuery;
 
     // Add additional filters (e.g., state for geo queries)
     if (config.additionalFilters) {
@@ -66,7 +115,7 @@ const handleTimeSeriesQuery = async (
     }
 
     // Query database
-    const sortFields = config.sortFields || { referenceDate: 1 };
+    const sortFields = config.sortFields || { periodKey: 1 };
     const data = await db
       .collection(config.collection)
       .find(query)
@@ -78,7 +127,6 @@ const handleTimeSeriesQuery = async (
         error: config.errorMessage || "No data found for the given period",
         query: { from, to, ...config.additionalFilters },
       });
-
       return;
     }
 

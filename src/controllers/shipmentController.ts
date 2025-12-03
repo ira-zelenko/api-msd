@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import clientPromise from "../lib/db";
+import { testClientPromise } from "../lib/db";
 
 /**
  * Search shipments with filters
@@ -18,8 +18,8 @@ export const searchShipments = async (
   res: Response
 ): Promise<void> => {
   try {
-    const client = await clientPromise;
-    const db = client.db("msd");
+    const client = await testClientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME_TEST);
 
     const {
       search,

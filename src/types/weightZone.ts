@@ -1,7 +1,7 @@
 export type MetricKey =
   | "spent"
   | "spentPercent"
-  | "volumeParcel"
+  | "volume"
   | "volumePercent"
   | "costPerParcel"
   | "costPerLB";
@@ -9,7 +9,7 @@ export type MetricKey =
 export interface ZoneWeightMetrics {
   spent: number,
   spentPercent: number,
-  volumeParcel: number,
+  volume: number,
   volumePercent: number,
   costPerLB: number,
   costPerParcel: number,
@@ -25,7 +25,6 @@ export interface WeightZoneRecord {
   _id?: string;
   periodType: "daily" | "weekly" | "monthly";
   periodKey: string;
-  referenceDate: string;
   carrier: string;
   shipvia: string;
   distributionCenter: string;
