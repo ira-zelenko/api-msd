@@ -13,8 +13,6 @@ class Auth0Service {
       clientId: auth0Config.clientId,       // M2M client
       clientSecret: auth0Config.clientSecret,
     });
-
-    console.log('✅ Auth0 Management client initialized');
   }
 
   async createUserWithMetadata(

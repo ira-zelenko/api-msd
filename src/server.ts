@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import helmet from "helmet";
 
 const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.local";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
@@ -10,9 +11,11 @@ import { initAuth0Config } from "./config/auth0.config";
 initAuth0Config();
 
 import apiRoutes from "./routes/index";
-import { authRoutes } from "./routes/auth.routes";
 
 const app = express();
+
+// Security headers
+app.use(helmet());
 
 const allowedOrigins: (string | RegExp)[] = [
   "http://localhost:3000",
@@ -45,20 +48,18 @@ app.use(
   })
 );
 
-app.use(express.json());
+// Body parser with size limit
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// Request logging middleware
 app.use((req, res, next) => {
   next();
 });
 
-// Auth routes (registration)
-app.use("/api", authRoutes);
+// Routes
+app.use('/api', apiRoutes);
 
-// Your existing API routes
-app.use("/api", apiRoutes);
-
-// Health check endpoint
+// Health check
 app.get("/", (req, res) => {
   res.json({
     status: "ok",
@@ -83,7 +84,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Export for Vercel (Serverless func)
 export default app;
 
 // For local development
