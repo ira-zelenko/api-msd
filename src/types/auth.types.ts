@@ -7,16 +7,16 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface RegisterResponse {
-  success: boolean;
-  auth0UserId: string;
-  email: string;
-  message: string;
-}
-
 export interface Auth0CreateUserResponse {
   user_id: string;
   email: string;
   email_verified: boolean;
   created_at: string;
+}
+
+export interface Auth0TokenResponse {
+  access_token: string;
+  id_token: string;
+  expires_in: number;
+  token_type: string;
 }
