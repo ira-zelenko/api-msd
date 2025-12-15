@@ -10,16 +10,8 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   success: boolean;
   auth0UserId: string;
-  accessToken: string;
-  idToken: string;
-  expiresIn: number;
-  userData: {
-    company: string;
-    fullName: string;
-    position: string;
-    email: string;
-    telephone: string;
-  };
+  email: string;
+  message: string;
 }
 
 export interface Auth0CreateUserResponse {
@@ -27,11 +19,4 @@ export interface Auth0CreateUserResponse {
   email: string;
   email_verified: boolean;
   created_at: string;
-}
-
-export interface Auth0TokenResponse {
-  access_token: string;
-  id_token: string;
-  expires_in: number;
-  token_type: string;
 }
