@@ -10,9 +10,11 @@ class Auth0Service {
 
     this.managementClient = new ManagementClient({
       domain: auth0Config.domain,
-      clientId: auth0Config.clientId,       // M2M client
+      clientId: auth0Config.clientId,
       clientSecret: auth0Config.clientSecret,
     });
+
+    console.log('✅ Auth0 Management client initialized');
   }
 
   async createUserWithMetadata(
@@ -32,15 +34,42 @@ class Auth0Service {
       password,
       connection: auth0Config.connection,
       email_verified: false,
-      user_metadata: metadata,
+      user_metadata: {
+        ...metadata,
+        isFirstLogin: true, // Flag for first login
+        hasCompletedSetup: false, // Flag for completed setup
+      },
     });
 
     return {
       user_id: user.user_id!,
       email: user.email!,
       email_verified: user.email_verified ?? false,
-      created_at: typeof user.created_at === 'string' ? user.created_at : new Date().toISOString(),
+      created_at:
+        typeof user.created_at === 'string'
+          ? user.created_at
+          : new Date().toISOString(),
     };
+  }
+
+  /**
+   * Mark user as having completed first login
+   */
+  async markFirstLoginComplete(userId: string): Promise<void> {
+    this.initializeClient();
+
+    try {
+      await this.managementClient!.users.update(userId, {
+        user_metadata: {
+          isFirstLogin: false,
+        },
+      });
+
+      console.log('✅ First login marked as complete for:', userId);
+    } catch (error: any) {
+      console.error('❌ Failed to update first login flag:', error);
+      throw new Error('Failed to update user metadata');
+    }
   }
 
   async getUserByEmail(email: string) {
@@ -49,9 +78,14 @@ class Auth0Service {
     const token = await this.getManagementToken();
 
     const response = await fetch(
-      `https://${auth0Config.domain}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
+      `https://${auth0Config.domain}/api/v2/users-by-email?email=${encodeURIComponent(
+        email
+      )}`,
       {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       }
     );
 

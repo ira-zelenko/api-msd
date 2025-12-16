@@ -117,6 +117,37 @@ class AuthController {
     }
   }
 
+  /**
+   * Mark user's first login as complete
+   */
+  async completeFirstLogin(req: Request, res: Response) {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID required',
+        });
+      }
+
+      console.log('✅ Marking first login complete for:', userId);
+
+      await auth0Service.markFirstLoginComplete(userId);
+
+      res.json({
+        success: true,
+        message: 'First login marked as complete',
+      });
+    } catch (err: any) {
+      console.error('❌ Complete first login error:', err);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update user status',
+      });
+    }
+  }
+
   async healthCheck(_: Request, res: Response) {
     res.json({
       status: 'ok',

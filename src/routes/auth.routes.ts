@@ -11,6 +11,11 @@ router.post(
   authController.register.bind(authController)
 );
 
+router.post(
+  '/complete-first-login',
+  authController.completeFirstLogin.bind(authController)
+);
+
 // Health check
 router.get('/health', authController.healthCheck.bind(authController));
 
