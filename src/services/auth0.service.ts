@@ -13,10 +13,11 @@ class Auth0Service {
       clientId: auth0Config.clientId,
       clientSecret: auth0Config.clientSecret,
     });
-
-    console.log('✅ Auth0 Management client initialized');
   }
 
+  /**
+   * create user with metadata from create acc form
+   */
   async createUserWithMetadata(
     email: string,
     password: string,
@@ -36,8 +37,7 @@ class Auth0Service {
       email_verified: false,
       user_metadata: {
         ...metadata,
-        isFirstLogin: true, // Flag for first login
-        hasCompletedSetup: false, // Flag for completed setup
+        isFirstLogin: true,
       },
     });
 
@@ -46,9 +46,7 @@ class Auth0Service {
       email: user.email!,
       email_verified: user.email_verified ?? false,
       created_at:
-        typeof user.created_at === 'string'
-          ? user.created_at
-          : new Date().toISOString(),
+        typeof user.created_at === 'string' ? user.created_at : new Date().toISOString(),
     };
   }
 
@@ -65,13 +63,14 @@ class Auth0Service {
         },
       });
 
-      console.log('✅ First login marked as complete for:', userId);
     } catch (error: any) {
-      console.error('❌ Failed to update first login flag:', error);
       throw new Error('Failed to update user metadata');
     }
   }
 
+  /**
+   * Get user by email from Auth0
+   */
   async getUserByEmail(email: string) {
     this.initializeClient();
 
@@ -97,6 +96,9 @@ class Auth0Service {
     return users[0];
   }
 
+  /**
+   * Update user metadata in Auth0
+   */
   async updateUserMetadata(
     userId: string,
     metadata: Record<string, any>
@@ -104,25 +106,53 @@ class Auth0Service {
     this.initializeClient();
 
     try {
-      // Get current metadata first
       const user = await this.managementClient!.users.get(userId);
       const currentMetadata = (user as any).user_metadata || {};
 
-      // Merge with new metadata
       const updatedMetadata = {
         ...currentMetadata,
         ...metadata,
       };
 
-      // Update in Auth0
       await this.managementClient!.users.update(userId, {
         user_metadata: updatedMetadata,
       });
 
-      console.log('✅ User metadata updated for:', userId);
     } catch (error: any) {
-      console.error('❌ Failed to update user metadata:', error);
       throw new Error('Failed to update user metadata');
+    }
+  }
+
+  /**
+   * Resend verification email for a user
+   */
+  async resendVerificationEmail(userId: string): Promise<void> {
+    this.initializeClient();
+
+    try {
+      const token = await this.getManagementToken();
+
+      const response = await fetch(
+        `https://${auth0Config.domain}/api/v2/jobs/verification-email`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+
+        throw new Error(error.message || 'Failed to send verification email');
+      }
+    } catch (error: any) {
+      throw new Error('Failed to resend verification email');
     }
   }
 

@@ -4,7 +4,6 @@ import { registrationLimiter } from '../middleware/rate-limit';
 
 const router = Router();
 
-// Apply rate limiting to registration
 router.post(
   '/register',
   registrationLimiter.middleware(),
@@ -16,7 +15,12 @@ router.post(
   authController.updateUserMetadata.bind(authController)
 );
 
-// Health check
+router.post(
+  '/resend-verification',
+  registrationLimiter.middleware(),
+  authController.resendVerificationEmail.bind(authController)
+);
+
 router.get('/health', authController.healthCheck.bind(authController));
 
 export { router as authRoutes };

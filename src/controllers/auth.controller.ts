@@ -87,7 +87,7 @@ class AuthController {
         });
       }
 
-      const user = await auth0Service.createUserWithMetadata(
+      await auth0Service.createUserWithMetadata(
         sanitizedData.email,
         sanitizedData.password,
         {
@@ -128,22 +128,69 @@ class AuthController {
         });
       }
 
-      console.log('📝 Updating user metadata for:', userId);
-      console.log('New metadata:', metadata);
-
       await auth0Service.updateUserMetadata(userId, metadata);
-
-      console.log('✅ User metadata updated in Auth0');
 
       res.json({
         success: true,
         message: 'User metadata updated',
       });
     } catch (err: any) {
-      console.error('❌ Update metadata error:', err);
       res.status(500).json({
         success: false,
         error: 'Failed to update user metadata',
+      });
+    }
+  }
+
+  async resendVerificationEmail(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email is required',
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format',
+        });
+      }
+
+      // Get user from Auth0
+      const user = await auth0Service.getUserByEmail(email);
+
+      // Check if email is already verified
+      if (user.email_verified) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email is already verified. Please try logging in.',
+        });
+      }
+
+      // Trigger Auth0 to resend verification email
+      await auth0Service.resendVerificationEmail(user.user_id);
+
+      res.json({
+        success: true,
+        message: 'Verification email sent! Please check your inbox.',
+      });
+    } catch (err: any) {
+      if (err.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: 'No account found with this email address.',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to resend verification email. Please try again later.',
       });
     }
   }

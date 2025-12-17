@@ -1,4 +1,4 @@
-export interface RegisterRequest {
+interface RegisterRequest {
   company: string;
   fullName: string;
   position: string;
@@ -7,16 +7,11 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface Auth0CreateUserResponse {
+interface Auth0CreateUserResponse {
   user_id: string;
   email: string;
   email_verified: boolean;
   created_at: string;
 }
 
-export interface Auth0TokenResponse {
-  access_token: string;
-  id_token: string;
-  expires_in: number;
-  token_type: string;
-}
+export { RegisterRequest, Auth0CreateUserResponse }
