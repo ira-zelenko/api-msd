@@ -12,8 +12,8 @@ router.post(
 );
 
 router.post(
-  '/complete-first-login',
-  authController.completeFirstLogin.bind(authController)
+  '/update-user-metadata',
+  authController.updateUserMetadata.bind(authController)
 );
 
 // Health check

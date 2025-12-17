@@ -97,6 +97,35 @@ class Auth0Service {
     return users[0];
   }
 
+  async updateUserMetadata(
+    userId: string,
+    metadata: Record<string, any>
+  ): Promise<void> {
+    this.initializeClient();
+
+    try {
+      // Get current metadata first
+      const user = await this.managementClient!.users.get(userId);
+      const currentMetadata = (user as any).user_metadata || {};
+
+      // Merge with new metadata
+      const updatedMetadata = {
+        ...currentMetadata,
+        ...metadata,
+      };
+
+      // Update in Auth0
+      await this.managementClient!.users.update(userId, {
+        user_metadata: updatedMetadata,
+      });
+
+      console.log('✅ User metadata updated for:', userId);
+    } catch (error: any) {
+      console.error('❌ Failed to update user metadata:', error);
+      throw new Error('Failed to update user metadata');
+    }
+  }
+
   private async getManagementToken(): Promise<string> {
     const response = await fetch(`https://${auth0Config.domain}/oauth/token`, {
       method: 'POST',

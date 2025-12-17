@@ -117,33 +117,33 @@ class AuthController {
     }
   }
 
-  /**
-   * Mark user's first login as complete
-   */
-  async completeFirstLogin(req: Request, res: Response) {
+  async updateUserMetadata(req: Request, res: Response) {
     try {
-      const { userId } = req.body;
+      const { userId, metadata } = req.body;
 
-      if (!userId) {
+      if (!userId || !metadata) {
         return res.status(400).json({
           success: false,
-          error: 'User ID required',
+          error: 'User ID and metadata required',
         });
       }
 
-      console.log('✅ Marking first login complete for:', userId);
+      console.log('📝 Updating user metadata for:', userId);
+      console.log('New metadata:', metadata);
 
-      await auth0Service.markFirstLoginComplete(userId);
+      await auth0Service.updateUserMetadata(userId, metadata);
+
+      console.log('✅ User metadata updated in Auth0');
 
       res.json({
         success: true,
-        message: 'First login marked as complete',
+        message: 'User metadata updated',
       });
     } catch (err: any) {
-      console.error('❌ Complete first login error:', err);
+      console.error('❌ Update metadata error:', err);
       res.status(500).json({
         success: false,
-        error: 'Failed to update user status',
+        error: 'Failed to update user metadata',
       });
     }
   }
