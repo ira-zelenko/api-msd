@@ -16,7 +16,7 @@ class Auth0Service {
   }
 
   /**
-   * create user with metadata from create acc form
+   * Create user with metadata from create acc form
    */
   async createUserWithMetadata(
     email: string,
@@ -51,20 +51,69 @@ class Auth0Service {
   }
 
   /**
-   * Mark user as having completed first login
+   * Check if phone number already exists
    */
-  async markFirstLoginComplete(userId: string): Promise<void> {
+  async isPhoneNumberTaken(telephone: string): Promise<boolean> {
     this.initializeClient();
 
     try {
-      await this.managementClient!.users.update(userId, {
-        user_metadata: {
-          isFirstLogin: false,
-        },
-      });
+      const token = await this.getManagementToken();
 
+      // Use Management API directly to search users by phone
+      const response = await fetch(
+        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(telephone)}"&search_engine=v3`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const users = await response.json();
+
+      return users.length > 0;
     } catch (error: any) {
-      throw new Error('Failed to update user metadata');
+      return false;
+    }
+  }
+
+  /**
+   * Get user by phone number
+   */
+  async getUserByPhone(telephone: string) {
+    this.initializeClient();
+
+    try {
+      const token = await this.getManagementToken();
+
+      const response = await fetch(
+        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(telephone)}"&search_engine=v3`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to search users by phone');
+      }
+
+      const users = await response.json();
+
+      if (!users.length) {
+        throw new Error('User not found');
+      }
+
+      return users[0];
+    } catch (error: any) {
+      throw new Error('User not found');
     }
   }
 
@@ -88,10 +137,14 @@ class Auth0Service {
       }
     );
 
-    if (!response.ok) throw new Error('Failed to fetch user by email');
+    if (!response.ok) {
+      throw new Error('Failed to fetch user by email');
+    }
 
     const users = await response.json();
-    if (!users || users.length === 0) throw new Error('User not found');
+    if (!users || !users.length) {
+      throw new Error('User not found');
+    }
 
     return users[0];
   }

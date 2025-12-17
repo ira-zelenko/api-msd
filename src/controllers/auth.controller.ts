@@ -51,7 +51,6 @@ class AuthController {
       }
 
       const passwordValidation = validatePassword(sanitizedData.password);
-
       if (!passwordValidation.valid) {
         return res.status(400).json({
           success: false,
@@ -84,6 +83,15 @@ class AuthController {
         return res.status(400).json({
           success: false,
           error: 'Invalid phone number format',
+        });
+      }
+
+      const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.telephone);
+
+      if (phoneExists) {
+        return res.status(409).json({
+          success: false,
+          error: 'This phone number is already registered',
         });
       }
 
@@ -126,6 +134,23 @@ class AuthController {
           success: false,
           error: 'User ID and metadata required',
         });
+      }
+
+      if (metadata.telephone) {
+
+        try {
+          const existingUser = await auth0Service.getUserByPhone(metadata.telephone);
+
+          // If phone exists and belongs to a different user, reject
+          if (existingUser.user_id !== userId) {
+            return res.status(409).json({
+              success: false,
+              error: 'This phone number is already registered',
+            });
+          }
+        } catch (err) {
+          console.log('Phone number is available');
+        }
       }
 
       await auth0Service.updateUserMetadata(userId, metadata);
