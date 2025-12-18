@@ -22,7 +22,7 @@ class AuthController {
         'fullName',
         'company',
         'position',
-        'telephone',
+        'phone',
       ];
 
       const missing = requiredFields.filter((f) => !data[f]);
@@ -40,7 +40,7 @@ class AuthController {
         fullName: sanitizeString(data.fullName),
         company: sanitizeString(data.company),
         position: sanitizeString(data.position),
-        telephone: sanitizeString(data.telephone),
+        phone: sanitizeString(data.phone),
       };
 
       if (!validateEmail(sanitizedData.email)) {
@@ -79,14 +79,14 @@ class AuthController {
         });
       }
 
-      if (!validatePhone(sanitizedData.telephone)) {
+      if (!validatePhone(sanitizedData.phone)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid phone number format',
         });
       }
 
-      const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.telephone);
+      const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.phone);
 
       if (phoneExists) {
         return res.status(409).json({
@@ -102,7 +102,7 @@ class AuthController {
           company: sanitizedData.company,
           fullName: sanitizedData.fullName,
           position: sanitizedData.position,
-          telephone: sanitizedData.telephone,
+          phone: sanitizedData.phone,
         }
       );
 
@@ -136,10 +136,10 @@ class AuthController {
         });
       }
 
-      if (metadata.telephone) {
+      if (metadata.phone) {
 
         try {
-          const existingUser = await auth0Service.getUserByPhone(metadata.telephone);
+          const existingUser = await auth0Service.getUserByPhone(metadata.phone);
 
           // If phone exists and belongs to a different user, reject
           if (existingUser.user_id !== userId) {

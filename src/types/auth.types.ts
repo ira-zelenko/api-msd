@@ -3,7 +3,7 @@ interface RegisterRequest {
   fullName: string;
   position: string;
   email: string;
-  telephone: string;
+  phone: string;
   password: string;
 }
 

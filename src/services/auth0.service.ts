@@ -25,7 +25,7 @@ class Auth0Service {
       company: string;
       fullName: string;
       position: string;
-      telephone: string;
+      phone: string;
     }
   ): Promise<Auth0CreateUserResponse> {
     this.initializeClient();
@@ -53,7 +53,7 @@ class Auth0Service {
   /**
    * Check if phone number already exists
    */
-  async isPhoneNumberTaken(telephone: string): Promise<boolean> {
+  async isPhoneNumberTaken(phone: string): Promise<boolean> {
     this.initializeClient();
 
     try {
@@ -61,7 +61,7 @@ class Auth0Service {
 
       // Use Management API directly to search users by phone
       const response = await fetch(
-        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(telephone)}"&search_engine=v3`,
+        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(phone)}"&search_engine=v3`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -85,14 +85,14 @@ class Auth0Service {
   /**
    * Get user by phone number
    */
-  async getUserByPhone(telephone: string) {
+  async getUserByPhone(phone: string) {
     this.initializeClient();
 
     try {
       const token = await this.getManagementToken();
 
       const response = await fetch(
-        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(telephone)}"&search_engine=v3`,
+        `https://${auth0Config.domain}/api/v2/users?q=user_metadata.telephone:"${encodeURIComponent(phone)}"&search_engine=v3`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
