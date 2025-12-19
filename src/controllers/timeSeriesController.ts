@@ -57,18 +57,6 @@ const getWeightZoneDaily = createTimeSeriesController(
   "weight zone"
 );
 
-const getWeightZoneWeekly = createTimeSeriesController(
-  "weight_zone_weekly",
-  "weekly",
-  "weight zone"
-);
-
-const getWeightZoneMonthly = createTimeSeriesController(
-  "weight_zone_monthly",
-  "monthly",
-  "weight zone"
-);
-
 // GEO STATE CONTROLLERS
 const getGeoStateDaily = createTimeSeriesController(
   "geo_state_daily",
@@ -77,29 +65,6 @@ const getGeoStateDaily = createTimeSeriesController(
   {
     sortFields: { state: 1 },
     additionalFilterKeys: ["state"],
-    useTestDb: true,
-  }
-);
-
-const getGeoStateWeekly = createTimeSeriesController(
-  "geo_state_weekly",
-  "weekly",
-  "geo state",
-  {
-    sortFields: { state: 1 },
-    additionalFilterKeys: ["state"],
-    useTestDb: true,
-  }
-);
-
-const getGeoStateMonthly = createTimeSeriesController(
-  "geo_state_monthly",
-  "monthly",
-  "geo state",
-  {
-    sortFields: { state: 1 },
-    additionalFilterKeys: ["state"],
-    useTestDb: true,
   }
 );
 
@@ -112,29 +77,6 @@ const getGeoCountyDaily = createTimeSeriesController(
   {
     sortFields: { state: 1, county: 1 },
     additionalFilterKeys: ["state"],
-    useTestDb: true,
-  }
-);
-
-const getGeoCountyWeekly = createTimeSeriesController(
-  "geo_county_weekly",
-  "weekly",
-  "geo county",
-  {
-    sortFields: { state: 1, county: 1 },
-    additionalFilterKeys: ["state"],
-    useTestDb: true,
-  }
-);
-
-const getGeoCountyMonthly = createTimeSeriesController(
-  "geo_county_monthly",
-  "monthly",
-  "geo county",
-  {
-    sortFields: { state: 1, county: 1 },
-    additionalFilterKeys: ["state"],
-    useTestDb: true,
   }
 );
 
@@ -144,12 +86,6 @@ export {
   getMetricsWeekly,
   getMetricsMonthly,
   getWeightZoneDaily,
-  getWeightZoneWeekly,
-  getWeightZoneMonthly,
   getGeoStateDaily,
-  getGeoStateWeekly,
-  getGeoStateMonthly,
   getGeoCountyDaily,
-  getGeoCountyWeekly,
-  getGeoCountyMonthly,
 }

@@ -4,14 +4,8 @@ import {
   getMetricsWeekly,
   getMetricsMonthly,
   getWeightZoneDaily,
-  getWeightZoneWeekly,
-  getWeightZoneMonthly,
   getGeoStateDaily,
-  getGeoStateWeekly,
-  getGeoStateMonthly,
   getGeoCountyDaily,
-  getGeoCountyWeekly,
-  getGeoCountyMonthly,
 } from "../controllers/timeSeriesController";
 
 const router = Router();
@@ -26,26 +20,20 @@ router.get("/metrics/monthly", getMetricsMonthly);
 
 // WEIGHT ZONE ROUTES, Query params: from, to
 /**
- * GET /api/weight-zone/${periodType}
+ * GET /api/weight-zone/daily
  */
 router.get("/weight-zone/daily", getWeightZoneDaily);
-router.get("/weight-zone/weekly", getWeightZoneWeekly);
-router.get("/weight-zone/monthly", getWeightZoneMonthly);
 
 // GEO STATE ROUTES, Query params: from, to, state (optional)
 /**
- * GET /api/geo/state/${periodType}
+ * GET /api/geo/state/daily
  */
 router.get("/geo/state/daily", getGeoStateDaily);
-router.get("/geo/state/weekly", getGeoStateWeekly);
-router.get("/geo/state/monthly", getGeoStateMonthly);
 
 // GEO COUNTY ROUTES, Query params: from, to, state (optional - REQUIRED for drilldown)
 /**
- * GET /api/geo/county/${periodType}
+ * GET /api/geo/county/daily
  */
 router.get("/geo/county/daily", getGeoCountyDaily);
-router.get("/geo/county/weekly", getGeoCountyWeekly);
-router.get("/geo/county/monthly", getGeoCountyMonthly);
 
 export default router;
