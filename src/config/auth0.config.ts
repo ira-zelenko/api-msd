@@ -5,7 +5,7 @@ export const getAuth0Config = () => ({
   spaClientId: process.env.AUTH0_SPA_CLIENT_ID!,
   spaClientSecret: process.env.AUTH0_SPA_CLIENT_SECRET!,
   audience: process.env.AUTH0_AUDIENCE!,
-  connection: 'Username-Password-Authentication',
+  connection: process.env.AUTH0_CONNECTION!,
 });
 
 export let auth0Config: ReturnType<typeof getAuth0Config>;

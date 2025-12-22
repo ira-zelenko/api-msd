@@ -20,9 +20,17 @@ app.use(helmet());
 const allowedOrigins: (string | RegExp)[] = [
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://msd-wine.vercel.app",
+  "https://www.yourshippingdata.com",
+  "https://yourshippingdata.com",
   /^https:\/\/.*\.vercel\.app$/,
 ];
 
+// Add additional origins from env if provided
+if (process.env.ALLOWED_ORIGINS) {
+  const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  allowedOrigins.push(...envOrigins);
+}
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -64,7 +72,8 @@ app.get("/", (req, res) => {
   res.json({
     status: "ok",
     message: "API is running",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -73,11 +82,23 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     error: "Route not found",
+    path: req.path,
   });
 });
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: express.Request, res: express.Response) => {
+  console.error('Error:', err);
+
+  // CORS error
+  if (err.message?.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      error: 'CORS policy: Origin not allowed',
+    });
+  }
+
+  // General error
   res.status(err.status || 500).json({
     success: false,
     error: err.message || "Internal server error",
