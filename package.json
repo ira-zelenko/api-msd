@@ -14,17 +14,22 @@
   "license": "ISC",
   "dependencies": {
     "auth0": "^5.2.0",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.20.0",
-    "mongoose": "^8.19.3"
+    "mongoose": "^8.19.3",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^24.7.2",
     "tsx": "^4.20.6",

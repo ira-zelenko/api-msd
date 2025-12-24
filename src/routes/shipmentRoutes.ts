@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { searchShipments } from "../controllers/shipmentController";
+import { jwtCheck, requireClientType } from '../middleware/auth';
 
 const router = Router();
 
@@ -14,6 +15,6 @@ const router = Router();
  * - page: number (optional, default: 1)
  * - limit: number (optional, default: 10)
  */
-router.get("/search", searchShipments);
+router.get("/search", jwtCheck, requireClientType, searchShipments);
 
 export default router;
