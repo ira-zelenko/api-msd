@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
+import { createPublicKey } from 'crypto';
 
 let jwksCache = null;
 let jwksCacheTime = 0;
@@ -16,21 +17,34 @@ async function getJWKS() {
     return jwksCache;
 }
 
-function getSigningKey(kid) {
-    const jwks = getJWKS().then(j => {
-        const key = j.keys.find(k => k.kid === kid);
-        if (!key) throw new Error('Unable to find a signing key');
-        return key;
+async function getSigningKey(kid) {
+    const jwks = await getJWKS();
+    const key = jwks.keys.find((k) => k.kid === kid);
+
+    if (!key) {
+        throw new Error('Unable to find a signing key');
+    }
+
+    // Convert JWK to PEM format using Node.js crypto
+    const publicKey = createPublicKey({
+        key: key,
+        format: 'jwk',
     });
-    return jwks;
+
+    return publicKey.export({
+        type: 'spki',
+        format: 'pem',
+    });
 }
 
 export const jwtCheck = async (req, res, next) => {
-    const token = req.headers.authorization?.split(' ');
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'No authorization token provided' });
     }
+
+    const token = authHeader.split(' ')[1];
 
     try {
         const decoded = jwt.decode(token, { complete: true });
