@@ -32,23 +32,34 @@ if (process.env.ALLOWED_ORIGINS) {
   const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   allowedOrigins.push(...envOrigins);
 }
+
+function normalizeOrigin(origin: string) {
+  try {
+    const url = new URL(origin);
+    return `${url.protocol}//${url.hostname}`;
+  } catch {
+    return origin;
+  }
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) {
-        return callback(null, true);
-      }
+      if (!origin) return callback(null, true);
 
-      const isAllowed = allowedOrigins.some((allowedOrigin) =>
-        typeof allowedOrigin === "string"
-          ? origin === allowedOrigin
-          : allowedOrigin.test(origin)
-      );
+      const normalized = normalizeOrigin(origin);
+
+      const isAllowed = allowedOrigins.some((allowedOrigin) => {
+        if (typeof allowedOrigin === "string") {
+          return normalizeOrigin(allowedOrigin) === normalized;
+        }
+        return allowedOrigin.test(origin);
+      });
 
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error(`Not allowed by CORS: ${origin}`));
+        callback(null, false); // ⬅️ не бросаем ошибку
       }
     },
     credentials: true,
