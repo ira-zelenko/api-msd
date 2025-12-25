@@ -10,7 +10,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "api/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-
