@@ -15,9 +15,10 @@ interface JWKS {
 }
 
 let jwksCache: JWKS | null = null;
-let jwksCacheTime: number = 0;
+let jwksCacheTime = 0;
 
 async function getJWKS(): Promise<JWKS> {
+    // Caching for 10 minutes
     if (jwksCache && Date.now() - jwksCacheTime < 600000) {
         return jwksCache;
     }
