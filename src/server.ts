@@ -45,7 +45,9 @@ function normalizeOrigin(origin: string) {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
 
       const normalized = normalizeOrigin(origin);
 
@@ -59,7 +61,7 @@ app.use(
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(null, false); // ⬅️ не бросаем ошибку
+        callback(null, false);
       }
     },
     credentials: true,

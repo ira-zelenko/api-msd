@@ -7,8 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "vercel-build": "tsc"
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -35,8 +34,5 @@
     "@types/node": "^24.7.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
-  },
-  "engines": {
-    "node": "20.x"
   }
 }
