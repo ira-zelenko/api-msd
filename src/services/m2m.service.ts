@@ -1,10 +1,23 @@
 import fetch from 'node-fetch';
 import NodeCache from 'node-cache';
+import { Request } from 'express';
 
-const tokenCache = new NodeCache({ stdTTL: 3300 }); // Cache for 55 минут
+const tokenCache = new NodeCache({ stdTTL: 3300 }); // Cache for 55 minutes
 
-export async function getM2MToken() {
-    const cached = tokenCache.get('m2m_token');
+interface Auth0TokenResponse {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+}
+
+interface FetchOptions {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+}
+
+export async function getM2MToken(): Promise<string> {
+    const cached = tokenCache.get<string>('m2m_token');
     if (cached) return cached;
 
     try {
@@ -23,7 +36,7 @@ export async function getM2MToken() {
             throw new Error(`Failed to get M2M token: ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as Auth0TokenResponse;
         tokenCache.set('m2m_token', data.access_token);
         return data.access_token;
     } catch (error) {
@@ -32,7 +45,10 @@ export async function getM2MToken() {
     }
 }
 
-export async function callYSDAPI(endpoint, options = {}) {
+export async function callYSDAPI(
+  endpoint: string,
+  options: FetchOptions = {}
+) {
     const token = await getM2MToken();
 
     return fetch(`${process.env.YSD_API_URL}${endpoint}`, {
@@ -41,12 +57,15 @@ export async function callYSDAPI(endpoint, options = {}) {
             ...options.headers,
             'Authorization': `Bearer ${token}`,
             'X-Request-Source': 'nodejs-api',
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+        },
     });
 }
 
-export async function proxyRequestToYSDAPI(req, endpoint) {
+export async function proxyRequestToYSDAPI(
+  req: Request & { auth?: any },
+  endpoint: string
+) {
     /**
      * Proxies request from MSD client to YSD API through MSD API
      * Passes original User Token + user context
@@ -58,12 +77,15 @@ export async function proxyRequestToYSDAPI(req, endpoint) {
     return fetch(`${process.env.YSD_API_URL}${endpoint}`, {
         method: req.method,
         headers: {
-            'Authorization': userToken,
-            'X-User-Id': userId,
-            'X-User-Type': userType,
+            'Authorization': userToken ?? '',
+            'X-User-Id': userId ?? '',
+            'X-User-Type': userType ?? '',
             'X-Request-Source': 'client-a-proxy',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
-        body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+        body:
+          req.method !== 'GET' && req.method !== 'HEAD'
+            ? JSON.stringify(req.body)
+            : undefined,
     });
 }
