@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import NodeCache from 'node-cache';
 import { Request } from 'express';
 
