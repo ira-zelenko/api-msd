@@ -23,6 +23,7 @@ const allowedOrigins: (string | RegExp)[] = [
   "https://msd-wine.vercel.app",
   "https://www.yourshippingdata.com",
   "https://yourshippingdata.com",
+  "https://backoffice.yourshippingdata.com",
   /^https:\/\/.*\.vercel\.app$/,
 ];
 

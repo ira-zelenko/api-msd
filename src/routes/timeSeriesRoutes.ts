@@ -7,6 +7,7 @@ import {
   getGeoStateDaily,
   getGeoCountyDaily,
 } from "../controllers/timeSeriesController";
+import { jwtCheck, requireClientType } from '../middleware/auth';
 
 const router = Router();
 
@@ -14,26 +15,26 @@ const router = Router();
 /**
  * GET /api/metrics/${periodType}
  */
-router.get("/metrics/daily", getMetricsDaily);
-router.get("/metrics/weekly", getMetricsWeekly);
-router.get("/metrics/monthly", getMetricsMonthly);
+router.get("/metrics/daily", jwtCheck, requireClientType, getMetricsDaily);
+router.get("/metrics/weekly", jwtCheck, requireClientType, getMetricsWeekly);
+router.get("/metrics/monthly", jwtCheck, requireClientType, getMetricsMonthly);
 
 // WEIGHT ZONE ROUTES, Query params: from, to
 /**
  * GET /api/weight-zone/daily
  */
-router.get("/weight-zone/daily", getWeightZoneDaily);
+router.get("/weight-zone/daily", jwtCheck, requireClientType, getWeightZoneDaily);
 
 // GEO STATE ROUTES, Query params: from, to, state (optional)
 /**
  * GET /api/geo/state/daily
  */
-router.get("/geo/state/daily", getGeoStateDaily);
+router.get("/geo/state/daily", jwtCheck, requireClientType, getGeoStateDaily);
 
 // GEO COUNTY ROUTES, Query params: from, to, state (optional - REQUIRED for drilldown)
 /**
  * GET /api/geo/county/daily
  */
-router.get("/geo/county/daily", getGeoCountyDaily);
+router.get("/geo/county/daily", jwtCheck, requireClientType, getGeoCountyDaily);
 
 export default router;
