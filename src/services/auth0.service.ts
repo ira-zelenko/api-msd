@@ -26,6 +26,7 @@ class Auth0Service {
       fullName: string;
       position: string;
       phone: string;
+      client_id?: string | null;
     }
   ): Promise<Auth0CreateUserResponse> {
     this.initializeClient();
@@ -206,6 +207,19 @@ class Auth0Service {
       }
     } catch (error: any) {
       throw new Error('Failed to resend verification email');
+    }
+  }
+
+  /**
+   * Delete user from Auth0 (for rollback on registration failure)
+   */
+  async deleteUser(userId: string): Promise<void> {
+    this.initializeClient();
+
+    try {
+      await this.managementClient!.users.delete(userId);
+    } catch (error: any) {
+      throw new Error('Failed to delete user');
     }
   }
 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { auth0Service } from '../services/auth0.service';
+import { callYSDAPI } from '../services/m2m.service';
 import { RegisterRequest } from '../types/auth.types';
 import {
   sanitizeString,
@@ -43,6 +44,7 @@ class AuthController {
         phone: sanitizeString(data.phone),
       };
 
+      // 3. Validate inputs
       if (!validateEmail(sanitizedData.email)) {
         return res.status(400).json({
           success: false,
@@ -86,6 +88,7 @@ class AuthController {
         });
       }
 
+      // 4. Check if phone already exists
       const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.phone);
 
       if (phoneExists) {
@@ -95,7 +98,10 @@ class AuthController {
         });
       }
 
-      await auth0Service.createUserWithMetadata(
+      // 5. CREATE USER IN AUTH0 FIRST
+      console.log('📝 Step 1: Creating user in Auth0...');
+
+      const auth0User = await auth0Service.createUserWithMetadata(
         sanitizedData.email,
         sanitizedData.password,
         {
@@ -106,11 +112,109 @@ class AuthController {
         }
       );
 
-      res.status(201).json({
-        success: true,
-        message: 'Registration successful! Please check your email to verify your account.',
-      });
+      console.log('✅ User created in Auth0:', auth0User.user_id);
+
+      // 6. CREATE CLIENT IN PYTHON API using M2M token
+      console.log('📝 Step 2: Creating client in Python API...');
+
+      const clientPayload = {
+        name: sanitizedData.company,
+        contact: {
+          fullName: sanitizedData.fullName,
+          email: sanitizedData.email,
+          position: sanitizedData.position,
+          phone: sanitizedData.phone,
+        },
+        carrierAccounts: [],
+      };
+
+      try {
+        const pythonResponse = await callYSDAPI('/clients', {
+          method: 'POST',
+          body: JSON.stringify(clientPayload),
+        });
+
+        console.log('+++++', pythonResponse)
+
+        if (!pythonResponse.ok) {
+          const errorData = await pythonResponse.text();
+
+          console.error('❌ Failed to create client in Python API:', errorData);
+
+          try {
+            await auth0Service.deleteUser(auth0User.user_id);
+          } catch (deleteError) {
+            console.warn(deleteError);
+          }
+
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to create client account',
+          });
+        }
+
+
+        const pythonClientData = await pythonResponse.json();
+        console.log('✅ Client created in Python API:', pythonClientData);
+
+        const createdClient = Array.isArray(pythonClientData)
+          ? pythonClientData[pythonClientData.length - 1]
+          : pythonClientData;
+
+        // 7. UPDATE AUTH0 USER METADATA with client ID
+        const client_id = createdClient?.client_id;
+
+        console.log('=====pythonClientData', pythonClientData, client_id)
+
+        if (!client_id) {
+          console.error('❌ No client_id returned from Python API');
+
+          console.log('🔄 Rolling back: Deleting Auth0 user...');
+          await auth0Service.deleteUser(auth0User.user_id);
+
+          return res.status(500).json({
+            success: false,
+            error: 'Client creation failed: missing client_id',
+          });
+        }
+
+        console.log('📝 Step 3: Updating Auth0 metadata with client ID...');
+
+        await auth0Service.updateUserMetadata(auth0User.user_id, {
+          client_id,
+        });
+
+        console.log('✅ Auth0 metadata updated with client ID:', client_id);
+
+        // 8. Return success
+        res.status(201).json({
+          success: true,
+          message: 'Registration successful! Please check your email to verify your account.',
+          userId: auth0User.user_id,
+          client_id,
+        });
+
+      } catch (pythonError: any) {
+        console.error('❌ Python API error:', pythonError);
+
+        // Rollback: Delete the Auth0 user
+        console.log('🔄 Rolling back: Deleting Auth0 user...');
+        try {
+          await auth0Service.deleteUser(auth0User.user_id);
+        } catch (deleteError) {
+          console.error('❌ Failed to rollback Auth0 user:', deleteError);
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create client account. Please try again.',
+          message: pythonError.message,
+        });
+      }
+
     } catch (err: any) {
+      console.error('❌ Registration error:', err);
+
       if (err.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
@@ -137,11 +241,9 @@ class AuthController {
       }
 
       if (metadata.phone) {
-
         try {
           const existingUser = await auth0Service.getUserByPhone(metadata.phone);
 
-          // If phone exists and belongs to a different user, reject
           if (existingUser.user_id !== userId) {
             return res.status(409).json({
               success: false,
@@ -178,7 +280,6 @@ class AuthController {
         });
       }
 
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({
@@ -187,10 +288,8 @@ class AuthController {
         });
       }
 
-      // Get user from Auth0
       const user = await auth0Service.getUserByEmail(email);
 
-      // Check if email is already verified
       if (user.email_verified) {
         return res.status(400).json({
           success: false,
@@ -198,7 +297,6 @@ class AuthController {
         });
       }
 
-      // Trigger Auth0 to resend verification email
       await auth0Service.resendVerificationEmail(user.user_id);
 
       res.json({
