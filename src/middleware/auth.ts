@@ -95,9 +95,10 @@ export const requireClientType = (
   res: Response,
   next: NextFunction
 ): void => {
+    const roles = (req as any).auth.payload['https://yourshippingdata.com/roles'];
     const userType = (req as any).auth.payload['https://yourshippingdata.com/user_type'];
 
-    if (userType !== 'MSD_User') {
+    if (userType !== 'MSD_User' && !roles.includes('MSD_User')) {
         res.status(403).json({
             error: 'Access Denied',
             message: 'This endpoint requires client type user',
@@ -115,9 +116,10 @@ export const requireManagerType = (
   res: Response,
   next: NextFunction
 ): void => {
+    const roles = (req as any).auth.payload['https://yourshippingdata.com/roles'];
     const userType = (req as any).auth.payload['https://yourshippingdata.com/user_type'];
 
-    if (userType !== 'YSD_User') {
+    if (userType !== 'YSD_User' && !roles.includes('YSD_User')) {
         res.status(403).json({
             error: 'Access Denied',
             message: 'This endpoint requires manager type user',
