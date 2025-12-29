@@ -99,8 +99,6 @@ class AuthController {
       }
 
       // 5. CREATE USER IN AUTH0 FIRST
-      console.log('📝 Step 1: Creating user in Auth0...');
-
       const auth0User = await auth0Service.createUserWithMetadata(
         sanitizedData.email,
         sanitizedData.password,
@@ -112,11 +110,7 @@ class AuthController {
         }
       );
 
-      console.log('✅ User created in Auth0:', auth0User.user_id);
-
       // 6. CREATE CLIENT IN PYTHON API using M2M token
-      console.log('📝 Step 2: Creating client in Python API...');
-
       const clientPayload = {
         name: sanitizedData.company,
         contact: {
@@ -153,7 +147,6 @@ class AuthController {
 
 
         const pythonClientData = await pythonResponse.json();
-        console.log('✅ Client created in Python API:', pythonClientData);
 
         const createdClient = Array.isArray(pythonClientData)
           ? pythonClientData[pythonClientData.length - 1]
@@ -163,9 +156,6 @@ class AuthController {
         const client_id = createdClient?.client_id;
 
         if (!client_id) {
-          console.error('❌ No client_id returned from Python API');
-
-          console.log('🔄 Rolling back: Deleting Auth0 user...');
           await auth0Service.deleteUser(auth0User.user_id);
 
           return res.status(500).json({
@@ -174,13 +164,9 @@ class AuthController {
           });
         }
 
-        console.log('📝 Step 3: Updating Auth0 metadata with client ID...');
-
         await auth0Service.updateUserMetadata(auth0User.user_id, {
           client_id,
         });
-
-        console.log('✅ Auth0 metadata updated with client ID:', client_id);
 
         // 8. Return success
         res.status(201).json({
@@ -194,7 +180,6 @@ class AuthController {
         console.error('❌ Python API error:', pythonError);
 
         // Rollback: Delete the Auth0 user
-        console.log('🔄 Rolling back: Deleting Auth0 user...');
         try {
           await auth0Service.deleteUser(auth0User.user_id);
         } catch (deleteError) {

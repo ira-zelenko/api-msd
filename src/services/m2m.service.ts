@@ -1,6 +1,10 @@
 import NodeCache from 'node-cache';
 import type { Request } from 'express';
 
+interface YSDRequestOptions extends FetchOptions {
+    req: Request & { auth?: any };
+}
+
 const tokenCache = new NodeCache({ stdTTL: 3300 }); // Cache for 55 minutes
 
 interface Auth0TokenResponse {
@@ -15,7 +19,7 @@ interface FetchOptions {
     body?: string;
 }
 
-export async function getM2MToken(): Promise<string> {
+async function getM2MToken(): Promise<string> {
     const cached = tokenCache.get<string>('m2m_token');
     if (cached) {
         return cached;
@@ -47,7 +51,7 @@ export async function getM2MToken(): Promise<string> {
     }
 }
 
-export async function callYSDAPI(
+async function callYSDAPI(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<Response> {
@@ -64,7 +68,29 @@ export async function callYSDAPI(
     });
 }
 
-export async function proxyRequestToYSDAPI(
+async function callYSDAPIWithUserData(
+  endpoint: string,
+  { req, ...options }: YSDRequestOptions,
+): Promise<Response> {
+    const userId = (req as any).auth?.sub;
+    const userType = (req as any).auth?.payload?.['https://yourshippingdata.com/user_type'];
+
+    const token = await getM2MToken();
+
+    return fetch(`${process.env.YSD_API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+            'X-User-Id': userId ?? '',
+            'X-User-Type': userType ?? '',
+            'X-Request-Source': 'nodejs-api',
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+async function proxyRequestToYSDAPI(
   req: Request & { auth?: any },
   endpoint: string
 ): Promise<Response> {
@@ -90,3 +116,5 @@ export async function proxyRequestToYSDAPI(
           : undefined,
     });
 }
+
+export { getM2MToken, callYSDAPI, callYSDAPIWithUserData, proxyRequestToYSDAPI };

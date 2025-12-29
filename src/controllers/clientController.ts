@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import clientPromise from "../lib/db";
+import { callYSDAPIWithUserData } from "../services/m2m.service";
 
 /**
  * Get client by ID from main MongoDB database (clients collection)
@@ -10,7 +11,6 @@ const getClientById = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Extract client ID from params
     const { id } = req.params;
 
     if (!id) {
@@ -52,4 +52,34 @@ const getClientById = async (
   }
 };
 
-export { getClientById };
+/**
+ * Update client data
+ * Route: PUT /api/clients/:id
+ */
+const updateClient = async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+
+    const response = await callYSDAPIWithUserData(`/clients/${id}`, {
+      req,
+      method: 'PUT',
+      body: JSON.stringify(req.body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    return res.json(data);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update client data',
+      message: error.message,
+    });
+  }
+}
+
+export { getClientById, updateClient };
