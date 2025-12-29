@@ -15,7 +15,7 @@ router.use("/shipment", shipmentRoutes);
 // Auth routes (registration, health)
 router.use("/auth", authRoutes);
 
-// Client routes (GET/PUT client data) - ADD THIS
-router.use("/", clientRoutes);
+// Client routes (GET/PUT client data)
+router.use("/clients", clientRoutes);
 
 export default router;

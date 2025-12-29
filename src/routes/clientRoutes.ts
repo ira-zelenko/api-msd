@@ -7,11 +7,11 @@ const router = express.Router();
 /**
  * Fetch client data by ID
  */
-router.get('/clients/:id', jwtCheck, requireClientType, getClientById);
+router.get('/:id', jwtCheck, requireClientType, getClientById);
 
 /**
  * Update client data
  */
-router.put('/clients/:id', jwtCheck, requireClientType, updateClient);
+router.put('/:id', jwtCheck, requireClientType, updateClient);
 
 export default router;
