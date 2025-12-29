@@ -125,16 +125,13 @@ class AuthController {
           position: sanitizedData.position,
           phone: sanitizedData.phone,
         },
-        carrierAccounts: [],
       };
 
       try {
-        const pythonResponse = await callYSDAPI('/clients', {
+        const pythonResponse = await callYSDAPI('/clients/', {
           method: 'POST',
           body: JSON.stringify(clientPayload),
         });
-
-        console.log('+++++', pythonResponse)
 
         if (!pythonResponse.ok) {
           const errorData = await pythonResponse.text();
@@ -163,8 +160,6 @@ class AuthController {
 
         // 7. UPDATE AUTH0 USER METADATA with client ID
         const client_id = createdClient?.client_id;
-
-        console.log('=====pythonClientData', pythonClientData, client_id)
 
         if (!client_id) {
           console.error('❌ No client_id returned from Python API');
