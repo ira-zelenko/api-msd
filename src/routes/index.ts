@@ -1,7 +1,7 @@
 import express from "express";
 import timeSeriesRoutes from "./timeSeriesRoutes";
 import shipmentRoutes from "./shipmentRoutes";
-import { authRoutes } from "./auth.routes";
+import { authRoutes } from "./authRoutes";
 import clientRoutes from "./clientRoutes";
 
 const router = express.Router();

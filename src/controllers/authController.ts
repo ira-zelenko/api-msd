@@ -27,6 +27,7 @@ class AuthController {
       ];
 
       const missing = requiredFields.filter((f) => !data[f]);
+
       if (missing.length) {
         return res.status(400).json({
           success: false,
@@ -44,15 +45,18 @@ class AuthController {
         phone: sanitizeString(data.phone),
       };
 
+      const { email, password, fullName, company, position, phone} = sanitizedData;
+
       // 3. Validate inputs
-      if (!validateEmail(sanitizedData.email)) {
+      if (!validateEmail(email)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid email format',
         });
       }
 
-      const passwordValidation = validatePassword(sanitizedData.password);
+      const passwordValidation = validatePassword(password);
+
       if (!passwordValidation.valid) {
         return res.status(400).json({
           success: false,
@@ -60,28 +64,28 @@ class AuthController {
         });
       }
 
-      if (!validateName(sanitizedData.fullName)) {
+      if (!validateName(fullName)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid name format',
         });
       }
 
-      if (!validateCompany(sanitizedData.company)) {
+      if (!validateCompany(company)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid company name',
         });
       }
 
-      if (!validateName(sanitizedData.position)) {
+      if (!validateName(position)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid position format',
         });
       }
 
-      if (!validatePhone(sanitizedData.phone)) {
+      if (!validatePhone(phone)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid phone number format',
@@ -89,7 +93,7 @@ class AuthController {
       }
 
       // 4. Check if phone already exists
-      const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.phone);
+      const phoneExists = await auth0Service.isPhoneNumberTaken(phone);
 
       if (phoneExists) {
         return res.status(409).json({
@@ -100,24 +104,24 @@ class AuthController {
 
       // 5. CREATE USER IN AUTH0 FIRST
       const auth0User = await auth0Service.createUserWithMetadata(
-        sanitizedData.email,
-        sanitizedData.password,
+        email,
+        password,
         {
-          company: sanitizedData.company,
-          fullName: sanitizedData.fullName,
-          position: sanitizedData.position,
-          phone: sanitizedData.phone,
+          company,
+          fullName,
+          position,
+          phone,
         }
       );
 
       // 6. CREATE CLIENT IN PYTHON API using M2M token
       const clientPayload = {
-        name: sanitizedData.company,
+        name: company,
         contact: {
-          fullName: sanitizedData.fullName,
-          email: sanitizedData.email,
-          position: sanitizedData.position,
-          phone: sanitizedData.phone,
+          fullName,
+          email,
+          position,
+          phone,
         },
         carrierAccounts: [],
       };
@@ -131,12 +135,12 @@ class AuthController {
         if (!pythonResponse.ok) {
           const errorData = await pythonResponse.text();
 
-          console.error('❌ Failed to create client in Python API:', errorData);
+          console.log('Failed to create client in Python API:', errorData);
 
           try {
             await auth0Service.deleteUser(auth0User.user_id);
           } catch (deleteError) {
-            console.warn(deleteError);
+            console.log(deleteError);
           }
 
           return res.status(500).json({
@@ -148,12 +152,8 @@ class AuthController {
 
         const pythonClientData = await pythonResponse.json();
 
-        const createdClient = Array.isArray(pythonClientData)
-          ? pythonClientData[pythonClientData.length - 1]
-          : pythonClientData;
-
         // 7. UPDATE AUTH0 USER METADATA with client ID
-        const client_id = createdClient?.client_id;
+        const client_id = pythonClientData?.client_id;
 
         if (!client_id) {
           await auth0Service.deleteUser(auth0User.user_id);
@@ -164,9 +164,7 @@ class AuthController {
           });
         }
 
-        await auth0Service.updateUserMetadata(auth0User.user_id, {
-          client_id,
-        });
+        await auth0Service.updateUserMetadata(auth0User.user_id, { client_id });
 
         // 8. Return success
         res.status(201).json({
@@ -177,7 +175,7 @@ class AuthController {
         });
 
       } catch (pythonError: any) {
-        console.error('❌ Python API error:', pythonError);
+        console.error('Python API error:', pythonError);
 
         // Rollback: Delete the Auth0 user
         try {
