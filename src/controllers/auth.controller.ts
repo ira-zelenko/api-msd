@@ -125,6 +125,7 @@ class AuthController {
           position: sanitizedData.position,
           phone: sanitizedData.phone,
         },
+        carrierAccounts: [],
       };
 
       try {
