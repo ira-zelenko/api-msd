@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { auth0Service } from '../services/auth0.service';
+import { callYSDAPI } from '../services/m2m.service';
 import { RegisterRequest } from '../types/auth.types';
 import {
   sanitizeString,
@@ -26,6 +27,7 @@ class AuthController {
       ];
 
       const missing = requiredFields.filter((f) => !data[f]);
+
       if (missing.length) {
         return res.status(400).json({
           success: false,
@@ -43,14 +45,18 @@ class AuthController {
         phone: sanitizeString(data.phone),
       };
 
-      if (!validateEmail(sanitizedData.email)) {
+      const { email, password, fullName, company, position, phone} = sanitizedData;
+
+      // 3. Validate inputs
+      if (!validateEmail(email)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid email format',
         });
       }
 
-      const passwordValidation = validatePassword(sanitizedData.password);
+      const passwordValidation = validatePassword(password);
+
       if (!passwordValidation.valid) {
         return res.status(400).json({
           success: false,
@@ -58,35 +64,36 @@ class AuthController {
         });
       }
 
-      if (!validateName(sanitizedData.fullName)) {
+      if (!validateName(fullName)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid name format',
         });
       }
 
-      if (!validateCompany(sanitizedData.company)) {
+      if (!validateCompany(company)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid company name',
         });
       }
 
-      if (!validateName(sanitizedData.position)) {
+      if (!validateName(position)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid position format',
         });
       }
 
-      if (!validatePhone(sanitizedData.phone)) {
+      if (!validatePhone(phone)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid phone number format',
         });
       }
 
-      const phoneExists = await auth0Service.isPhoneNumberTaken(sanitizedData.phone);
+      // 4. Check if phone already exists
+      const phoneExists = await auth0Service.isPhoneNumberTaken(phone);
 
       if (phoneExists) {
         return res.status(409).json({
@@ -95,22 +102,98 @@ class AuthController {
         });
       }
 
-      await auth0Service.createUserWithMetadata(
-        sanitizedData.email,
-        sanitizedData.password,
+      // 5. CREATE USER IN AUTH0 FIRST
+      const auth0User = await auth0Service.createUserWithMetadata(
+        email,
+        password,
         {
-          company: sanitizedData.company,
-          fullName: sanitizedData.fullName,
-          position: sanitizedData.position,
-          phone: sanitizedData.phone,
+          company,
+          fullName,
+          position,
+          phone,
         }
       );
 
-      res.status(201).json({
-        success: true,
-        message: 'Registration successful! Please check your email to verify your account.',
-      });
+      // 6. CREATE CLIENT IN PYTHON API using M2M token
+      const clientPayload = {
+        name: company,
+        contact: {
+          fullName,
+          email,
+          position,
+          phone,
+        },
+        carrierAccounts: [],
+      };
+
+      try {
+        const pythonResponse = await callYSDAPI('/clients/', {
+          method: 'POST',
+          body: JSON.stringify(clientPayload),
+        });
+
+        if (!pythonResponse.ok) {
+          const errorData = await pythonResponse.text();
+
+          console.log('Failed to create client in Python API:', errorData);
+
+          try {
+            await auth0Service.deleteUser(auth0User.user_id);
+          } catch (deleteError) {
+            console.log(deleteError);
+          }
+
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to create client account',
+          });
+        }
+
+
+        const pythonClientData = await pythonResponse.json();
+
+        // 7. UPDATE AUTH0 USER METADATA with client ID
+        const client_id = pythonClientData?.client_id;
+
+        if (!client_id) {
+          await auth0Service.deleteUser(auth0User.user_id);
+
+          return res.status(500).json({
+            success: false,
+            error: 'Client creation failed: missing client_id',
+          });
+        }
+
+        await auth0Service.updateUserMetadata(auth0User.user_id, { client_id });
+
+        // 8. Return success
+        res.status(201).json({
+          success: true,
+          message: 'Registration successful! Please check your email to verify your account.',
+          userId: auth0User.user_id,
+          client_id,
+        });
+
+      } catch (pythonError: any) {
+        console.error('Python API error:', pythonError);
+
+        // Rollback: Delete the Auth0 user
+        try {
+          await auth0Service.deleteUser(auth0User.user_id);
+        } catch (deleteError) {
+          console.error('❌ Failed to rollback Auth0 user:', deleteError);
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create client account. Please try again.',
+          message: pythonError.message,
+        });
+      }
+
     } catch (err: any) {
+      console.error('❌ Registration error:', err);
+
       if (err.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
@@ -137,11 +220,9 @@ class AuthController {
       }
 
       if (metadata.phone) {
-
         try {
           const existingUser = await auth0Service.getUserByPhone(metadata.phone);
 
-          // If phone exists and belongs to a different user, reject
           if (existingUser.user_id !== userId) {
             return res.status(409).json({
               success: false,
@@ -178,7 +259,6 @@ class AuthController {
         });
       }
 
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({
@@ -187,10 +267,8 @@ class AuthController {
         });
       }
 
-      // Get user from Auth0
       const user = await auth0Service.getUserByEmail(email);
 
-      // Check if email is already verified
       if (user.email_verified) {
         return res.status(400).json({
           success: false,
@@ -198,7 +276,6 @@ class AuthController {
         });
       }
 
-      // Trigger Auth0 to resend verification email
       await auth0Service.resendVerificationEmail(user.user_id);
 
       res.json({

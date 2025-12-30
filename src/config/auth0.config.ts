@@ -1,7 +1,7 @@
 export const getAuth0Config = () => ({
   domain: process.env.AUTH0_DOMAIN!,
-  clientId: process.env.AUTH0_M2M_CLIENT_ID!,
-  clientSecret: process.env.AUTH0_M2M_CLIENT_SECRET!,
+  clientId: process.env.AUTH0_M2M_CLIENT_ID_NODE!,
+  clientSecret: process.env.AUTH0_M2M_CLIENT_SECRET_NODE!,
   spaClientId: process.env.AUTH0_SPA_CLIENT_ID!,
   spaClientSecret: process.env.AUTH0_SPA_CLIENT_SECRET!,
   audience: process.env.AUTH0_AUDIENCE!,
