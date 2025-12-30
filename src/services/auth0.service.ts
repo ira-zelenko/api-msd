@@ -39,6 +39,7 @@ class Auth0Service {
       user_metadata: {
         ...metadata,
         isFirstLogin: true,
+        isCompleted: false,
       },
     });
 
