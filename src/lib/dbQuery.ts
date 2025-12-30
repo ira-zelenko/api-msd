@@ -120,6 +120,7 @@ const handleTimeSeriesQuery = async (
       .collection(config.collection)
       .find(query)
       .sort(sortFields)
+      .allowDiskUse(true)
       .toArray();
 
     res.json(data);

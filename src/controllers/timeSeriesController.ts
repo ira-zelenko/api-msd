@@ -87,4 +87,4 @@ export {
   getWeightZoneDaily,
   getGeoStateDaily,
   getGeoCountyDaily,
-};
+}
