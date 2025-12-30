@@ -16,9 +16,9 @@ const createTimeSeriesController = (
   }
 ) => {
   return async (req: Request, res: Response): Promise<void> => {
-    const additionalFilters = options?.additionalFilterKeys
-      ? buildAdditionalFilters(req, options.additionalFilterKeys)
-      : {};
+    const filterKeys = ['clientId', ...(options?.additionalFilterKeys || [])];
+
+    const additionalFilters = buildAdditionalFilters(req, filterKeys);
 
     await handleTimeSeriesQuery(req, res, {
       collection,
@@ -68,7 +68,6 @@ const getGeoStateDaily = createTimeSeriesController(
   }
 );
 
-
 // GEO COUNTY CONTROLLERS
 const getGeoCountyDaily = createTimeSeriesController(
   "geo_county_daily",
@@ -88,4 +87,4 @@ export {
   getWeightZoneDaily,
   getGeoStateDaily,
   getGeoCountyDaily,
-}
+};
