@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
+import { format, startOfWeek, getISOWeek, getWeekYear } from "date-fns";
 import clientPromise, { testClientPromise } from "./db";
-import { format, startOfWeek, getISOWeek } from "date-fns";
 
 /**
  * Generic handler for time-series data queries
@@ -23,10 +23,10 @@ const formatPeriodKey = (date: Date, periodType: string): string => {
       return format(date, 'yyyy-MM');
 
     case 'weekly':
-      const year = format(date, 'yyyy');
+      const weekYear = getWeekYear(date);
       const week = getISOWeek(date);
 
-      return `${year}-W${String(week).padStart(2, '0')}`;
+      return `${weekYear}-W${String(week).padStart(2, '0')}`;
 
     case 'daily':
       return format(date, 'yyyy-MM-dd');
@@ -120,18 +120,13 @@ const handleTimeSeriesQuery = async (
       .collection(config.collection)
       .find(query)
       .sort(sortFields)
+      .allowDiskUse(true)
       .toArray();
 
-    if (!data.length) {
-      res.status(404).json({
-        error: config.errorMessage || "No data found for the given period",
-        query: { from, to, ...config.additionalFilters },
-      });
-      return;
-    }
-
     res.json(data);
+
   } catch (err) {
+    console.error('Time series query error:', err);
     res.status(500).json({
       error: config.errorMessage || "Failed to fetch data",
     });
