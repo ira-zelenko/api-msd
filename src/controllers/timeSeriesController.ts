@@ -65,15 +65,16 @@ const getWeightZoneDaily = createTimeSeriesController({
 
 // GEO STATE CONTROLLERS
 const getGeoStateDaily = createTimeSeriesController({
-    collection: "geo_state_daily",
-    dataType: "geo state",
+  collection: "geo_state_daily",
+  dataType: "geo state",
 });
 
 // GEO COUNTY CONTROLLERS
 const getGeoCountyDaily = createTimeSeriesController({
   collection: "geo_county_daily",
-    dataType: "geo county",
-    sortFields: { state: 1, dest_county_fips_code: 1 }
+  dataType: "geo county",
+  sortFields: { state: 1, dest_county_fips_code: 1 },
+  additionalFilterKeys: ['state'], // Add state as an optional filter
 });
 
 export {

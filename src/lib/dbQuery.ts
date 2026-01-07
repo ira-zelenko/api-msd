@@ -76,6 +76,31 @@ export const buildDateQuery = (
 };
 
 /**
+ * Generate cache key including all filter parameters
+ */
+const generateCacheKey = (
+  collection: string,
+  clientId: string,
+  from: string,
+  to: string,
+  additionalFilters?: Record<string, any>
+): string => {
+  const baseKey = getCacheKey(collection, clientId, from, to);
+
+  if (!additionalFilters || Object.keys(additionalFilters).length === 0) {
+    return baseKey;
+  }
+
+  // Sort filter keys for consistent cache keys
+  const filterString = Object.keys(additionalFilters)
+    .sort()
+    .map(key => `${key}:${additionalFilters[key]}`)
+    .join('_');
+
+  return `${baseKey}_${filterString}`;
+};
+
+/**
  * Prepare time database query according to params
  */
 const prepareTimeSeriesQuery = async (
@@ -83,17 +108,18 @@ const prepareTimeSeriesQuery = async (
   config: QueryConfig,
   req: Request
 ): Promise<any[]> => {
-  const cacheKey = getCacheKey(
+  const { from, to } = req.query;
+
+  const cacheKey = generateCacheKey(
     config.collection,
     (req.query.clientId as string) || 'default',
-    (req.query.from as string) || '',
-    (req.query.to as string) || ''
+    (from as string) || '',
+    (to as string) || '',
+    config.additionalFilters
   );
 
   const cached = getCachedData(cacheKey);
   if (cached) return cached as any[];
-
-  const { from, to } = req.query;
 
   // Build date query with periodType-aware formatting
   const dateQuery = buildDateQuery(from as string, to as string, config.periodType ?? 'daily');
