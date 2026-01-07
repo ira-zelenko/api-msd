@@ -7,7 +7,7 @@ import clientPromise, { testClientPromise } from "./db";
  */
 export interface QueryConfig {
   collection: string;
-  periodType: 'daily' | 'weekly' | 'monthly';
+  periodType?: 'daily' | 'weekly' | 'monthly';
   sortFields?: Record<string, 1 | -1>;
   additionalFilters?: Record<string, any>;
   errorMessage?: string;
@@ -74,6 +74,49 @@ export const buildDateQuery = (
   };
 };
 
+/**
+ * Prepare time database query according to params
+ */
+const prepareTimeSeriesQuery = async (
+  db: any,
+  config: QueryConfig,
+  req: Request
+): Promise<any[]> => {
+  const { from, to } = req.query;
+
+  // Build date query with periodType-aware formatting
+  const dateQuery = buildDateQuery(from as string, to as string, config.periodType ?? 'daily');
+
+  if (!dateQuery) {
+    throw new Error("Invalid or missing date parameters");
+  }
+
+  const query: any = {};
+  query.periodKey = dateQuery;
+
+  if (config.periodType) {
+    query.periodType = config.periodType;
+  }
+
+  // Add additional filters (e.g., state for geo queries)
+  if (config.additionalFilters) {
+    Object.assign(query, config.additionalFilters);
+  }
+
+  const sortFields = config.sortFields || { periodKey: 1 };
+
+  // Query database
+  return await db
+    .collection(config.collection)
+    .find(query)
+    .sort(sortFields)
+    .allowDiskUse(true)
+    .toArray();
+};
+
+/**
+ * Handle query
+ */
 const handleTimeSeriesQuery = async (
   req: Request,
   res: Response,
@@ -92,40 +135,10 @@ const handleTimeSeriesQuery = async (
 
     const db = client.db(dbName);
 
-    const { from, to } = req.query;
-    const query: any = { periodType: config.periodType };
-
-    // Build date query with periodType-aware formatting
-    const dateQuery = buildDateQuery(
-      from as string,
-      to as string,
-      config.periodType
-    );
-
-    if (!dateQuery) {
-      res.status(400).json({ error: "Invalid or missing date parameters" });
-      return;
-    }
-
-    query.periodKey = dateQuery;
-
-    // Add additional filters (e.g., state for geo queries)
-    if (config.additionalFilters) {
-      Object.assign(query, config.additionalFilters);
-    }
-
-    // Query database
-    const sortFields = config.sortFields || { periodKey: 1 };
-    const data = await db
-      .collection(config.collection)
-      .find(query)
-      .sort(sortFields)
-      .allowDiskUse(true)
-      .toArray();
-
+    const data = await prepareTimeSeriesQuery(db, config, req);
     res.json(data);
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Time series query error:', err);
     res.status(500).json({
       error: config.errorMessage || "Failed to fetch data",
