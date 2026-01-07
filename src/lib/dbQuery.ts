@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { format, startOfWeek, getISOWeek, getWeekYear } from "date-fns";
 import clientPromise, { testClientPromise } from "./db";
+import { getCacheKey, getCachedData, cacheData } from './jsonCache';
 
 /**
  * Generic handler for time-series data queries
@@ -82,6 +83,16 @@ const prepareTimeSeriesQuery = async (
   config: QueryConfig,
   req: Request
 ): Promise<any[]> => {
+  const cacheKey = getCacheKey(
+    config.collection,
+    (req.query.clientId as string) || 'default',
+    (req.query.from as string) || '',
+    (req.query.to as string) || ''
+  );
+
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached as any[];
+
   const { from, to } = req.query;
 
   // Build date query with periodType-aware formatting
@@ -106,12 +117,16 @@ const prepareTimeSeriesQuery = async (
   const sortFields = config.sortFields || { periodKey: 1 };
 
   // Query database
-  return await db
+  const data = await db
     .collection(config.collection)
     .find(query)
     .sort(sortFields)
     .allowDiskUse(true)
     .toArray();
+
+  cacheData(cacheKey, data);
+
+  return data;
 };
 
 /**
