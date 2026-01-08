@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import { format, startOfWeek, getISOWeek, getWeekYear } from "date-fns";
 import clientPromise, { testClientPromise } from "./db";
+import { getCacheKey, getCachedData, cacheData } from './jsonCache';
 
 /**
  * Generic handler for time-series data queries
  */
 export interface QueryConfig {
   collection: string;
-  periodType: 'daily' | 'weekly' | 'monthly';
+  periodType?: 'daily' | 'weekly' | 'monthly';
   sortFields?: Record<string, 1 | -1>;
   additionalFilters?: Record<string, any>;
   errorMessage?: string;
@@ -37,13 +38,38 @@ const formatPeriodKey = (date: Date, periodType: string): string => {
 };
 
 /**
+ * Generate cache key including all filter parameters
+ */
+const generateCacheKey = (
+  collection: string,
+  clientId: string,
+  from: string,
+  to: string,
+  additionalFilters?: Record<string, any>
+): string => {
+  const baseKey = getCacheKey(collection, clientId, from, to);
+
+  if (!additionalFilters || !Object.keys(additionalFilters).length) {
+    return baseKey;
+  }
+
+  // Sort filter keys for consistent cache keys
+  const filterString = Object.keys(additionalFilters)
+    .sort()
+    .map(key => `${key}:${additionalFilters[key]}`)
+    .join('_');
+
+  return `${baseKey}_${filterString}`;
+};
+
+/**
  * Common query builder for date-based queries
  * Returns dates formatted according to periodType to match periodKey field
  */
 export const buildDateQuery = (
-  from: string | undefined,
-  to: string | undefined,
-  periodType: 'daily' | 'weekly' | 'monthly'
+  periodType: 'daily' | 'weekly' | 'monthly',
+  from?: string,
+  to?: string,
 ): { $gte: string; $lte: string } | null => {
   if (!from || !to) {
     return null;
@@ -74,6 +100,78 @@ export const buildDateQuery = (
   };
 };
 
+/**
+ * Prepare time database query according to params
+ */
+const prepareTimeSeriesQuery = async (
+  db: any,
+  config: QueryConfig,
+  req: Request
+): Promise<any[]> => {
+  const {
+    from,
+    to,
+    clientId,
+  } = req.query;
+
+  const {
+    collection,
+    additionalFilters,
+    periodType,
+    sortFields,
+  } = config;
+
+  const cacheKey = generateCacheKey(
+    collection,
+    (clientId as string) ?? 'default',
+    (from as string) ?? '',
+    (to as string) ?? '',
+    additionalFilters,
+  );
+
+  const cached = getCachedData(cacheKey);
+
+  if (cached) {
+    return cached as any[];
+  }
+
+  // Build date query with periodType-aware formatting
+  const dateQuery = buildDateQuery(periodType ?? 'daily', from as string, to as string);
+
+  if (!dateQuery) {
+    throw new Error("Invalid or missing date parameters");
+  }
+
+  const query: any = {};
+  query.periodKey = dateQuery;
+
+  if (periodType) {
+    query.periodType = periodType;
+  }
+
+  // Add additional filters (e.g., state for geo queries)
+  if (additionalFilters) {
+    Object.assign(query, additionalFilters);
+  }
+
+  const sortParams = sortFields || { periodKey: 1 };
+
+  // Query database
+  const data = await db
+    .collection(collection)
+    .find(query)
+    .sort(sortParams)
+    .allowDiskUse(true)
+    .toArray();
+
+  cacheData(cacheKey, data);
+
+  return data;
+};
+
+/**
+ * Handle query
+ */
 const handleTimeSeriesQuery = async (
   req: Request,
   res: Response,
@@ -92,40 +190,10 @@ const handleTimeSeriesQuery = async (
 
     const db = client.db(dbName);
 
-    const { from, to } = req.query;
-    const query: any = { periodType: config.periodType };
-
-    // Build date query with periodType-aware formatting
-    const dateQuery = buildDateQuery(
-      from as string,
-      to as string,
-      config.periodType
-    );
-
-    if (!dateQuery) {
-      res.status(400).json({ error: "Invalid or missing date parameters" });
-      return;
-    }
-
-    query.periodKey = dateQuery;
-
-    // Add additional filters (e.g., state for geo queries)
-    if (config.additionalFilters) {
-      Object.assign(query, config.additionalFilters);
-    }
-
-    // Query database
-    const sortFields = config.sortFields || { periodKey: 1 };
-    const data = await db
-      .collection(config.collection)
-      .find(query)
-      .sort(sortFields)
-      .allowDiskUse(true)
-      .toArray();
-
+    const data = await prepareTimeSeriesQuery(db, config, req);
     res.json(data);
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Time series query error:', err);
     res.status(500).json({
       error: config.errorMessage || "Failed to fetch data",
