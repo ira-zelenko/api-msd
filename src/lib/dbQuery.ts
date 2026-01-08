@@ -38,13 +38,38 @@ const formatPeriodKey = (date: Date, periodType: string): string => {
 };
 
 /**
+ * Generate cache key including all filter parameters
+ */
+const generateCacheKey = (
+  collection: string,
+  clientId: string,
+  from: string,
+  to: string,
+  additionalFilters?: Record<string, any>
+): string => {
+  const baseKey = getCacheKey(collection, clientId, from, to);
+
+  if (!additionalFilters || !Object.keys(additionalFilters).length) {
+    return baseKey;
+  }
+
+  // Sort filter keys for consistent cache keys
+  const filterString = Object.keys(additionalFilters)
+    .sort()
+    .map(key => `${key}:${additionalFilters[key]}`)
+    .join('_');
+
+  return `${baseKey}_${filterString}`;
+};
+
+/**
  * Common query builder for date-based queries
  * Returns dates formatted according to periodType to match periodKey field
  */
 export const buildDateQuery = (
-  from: string | undefined,
-  to: string | undefined,
-  periodType: 'daily' | 'weekly' | 'monthly'
+  periodType: 'daily' | 'weekly' | 'monthly',
+  from?: string,
+  to?: string,
 ): { $gte: string; $lte: string } | null => {
   if (!from || !to) {
     return null;
@@ -76,31 +101,6 @@ export const buildDateQuery = (
 };
 
 /**
- * Generate cache key including all filter parameters
- */
-const generateCacheKey = (
-  collection: string,
-  clientId: string,
-  from: string,
-  to: string,
-  additionalFilters?: Record<string, any>
-): string => {
-  const baseKey = getCacheKey(collection, clientId, from, to);
-
-  if (!additionalFilters || Object.keys(additionalFilters).length === 0) {
-    return baseKey;
-  }
-
-  // Sort filter keys for consistent cache keys
-  const filterString = Object.keys(additionalFilters)
-    .sort()
-    .map(key => `${key}:${additionalFilters[key]}`)
-    .join('_');
-
-  return `${baseKey}_${filterString}`;
-};
-
-/**
  * Prepare time database query according to params
  */
 const prepareTimeSeriesQuery = async (
@@ -108,21 +108,35 @@ const prepareTimeSeriesQuery = async (
   config: QueryConfig,
   req: Request
 ): Promise<any[]> => {
-  const { from, to } = req.query;
+  const {
+    from,
+    to,
+    clientId,
+  } = req.query;
+
+  const {
+    collection,
+    additionalFilters,
+    periodType,
+    sortFields,
+  } = config;
 
   const cacheKey = generateCacheKey(
-    config.collection,
-    (req.query.clientId as string) || 'default',
-    (from as string) || '',
-    (to as string) || '',
-    config.additionalFilters
+    collection,
+    (clientId as string) ?? 'default',
+    (from as string) ?? '',
+    (to as string) ?? '',
+    additionalFilters,
   );
 
   const cached = getCachedData(cacheKey);
-  if (cached) return cached as any[];
+
+  if (cached) {
+    return cached as any[];
+  }
 
   // Build date query with periodType-aware formatting
-  const dateQuery = buildDateQuery(from as string, to as string, config.periodType ?? 'daily');
+  const dateQuery = buildDateQuery(periodType ?? 'daily', from as string, to as string);
 
   if (!dateQuery) {
     throw new Error("Invalid or missing date parameters");
@@ -131,22 +145,22 @@ const prepareTimeSeriesQuery = async (
   const query: any = {};
   query.periodKey = dateQuery;
 
-  if (config.periodType) {
-    query.periodType = config.periodType;
+  if (periodType) {
+    query.periodType = periodType;
   }
 
   // Add additional filters (e.g., state for geo queries)
-  if (config.additionalFilters) {
-    Object.assign(query, config.additionalFilters);
+  if (additionalFilters) {
+    Object.assign(query, additionalFilters);
   }
 
-  const sortFields = config.sortFields || { periodKey: 1 };
+  const sortParams = sortFields || { periodKey: 1 };
 
   // Query database
   const data = await db
-    .collection(config.collection)
+    .collection(collection)
     .find(query)
-    .sort(sortFields)
+    .sort(sortParams)
     .allowDiskUse(true)
     .toArray();
 
