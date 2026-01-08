@@ -73,8 +73,7 @@ const getGeoStateDaily = createTimeSeriesController({
 const getGeoCountyDaily = createTimeSeriesController({
   collection: "geo_county_daily",
   dataType: "geo county",
-  sortFields: { state: 1, dest_county_fips_code: 1 },
-  additionalFilterKeys: ['state'], // Add state as an optional filter
+  additionalFilterKeys: ['state'],
 });
 
 export {
