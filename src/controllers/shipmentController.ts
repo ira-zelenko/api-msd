@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import pool from '../lib/pg';
+import { Request, Response } from "express";
+import pool from "../lib/pg";
 
 /**
  * Search shipments with filters (PostgreSQL version)
@@ -36,6 +36,7 @@ export const searchShipments = async (
       res.status(400).json({
         error: "clientId is required",
       });
+
       return;
     }
 
@@ -54,6 +55,7 @@ export const searchShipments = async (
       conditions.push(
         `(tracking_id ILIKE $${paramIndex} OR dest_zip ILIKE $${paramIndex})`
       );
+
       params.push(`%${search.trim()}%`);
       paramIndex++;
     }
@@ -62,6 +64,7 @@ export const searchShipments = async (
     const addArrayFilter = (param: any, fieldName: string) => {
       if (param && typeof param === "string") {
         const arr = param.split(",").map((s) => s.trim()).filter(Boolean);
+
         if (arr.length > 0) {
           conditions.push(`${fieldName} = ANY($${paramIndex})`);
           params.push(arr);
@@ -77,15 +80,25 @@ export const searchShipments = async (
     // Date range filter
     if (daterange && typeof daterange === "string") {
       const [from, to] = daterange.split(",");
+
       if (from && to) {
         const startDate = from.trim().substring(0, 10);
-        const endDateObj = new Date(to.trim());
+        const endDateRaw = to.trim().substring(0, 10);
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDateRaw)) {
+          return;
+        }
+
+        const endDateObj = new Date(endDateRaw + 'T00:00:00');
+
         endDateObj.setDate(endDateObj.getDate() + 1);
+
         const endDate = endDateObj.toISOString().substring(0, 10);
 
         conditions.push(
           `shipment_date >= $${paramIndex} AND shipment_date < $${paramIndex + 1}`
         );
+
         params.push(startDate, endDate);
         paramIndex += 2;
       }
