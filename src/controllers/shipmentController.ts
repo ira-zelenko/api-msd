@@ -71,7 +71,7 @@ export const searchShipments = async (
     };
 
     addArrayFilter(carrier, "carrier");
-    addArrayFilter(shipvia, "shipvia");
+    addArrayFilter(shipvia, "service");
     addArrayFilter(state, "state");
 
     // Date range filter
